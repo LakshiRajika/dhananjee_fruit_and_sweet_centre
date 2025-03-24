@@ -1,20 +1,49 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema({
-  orderId: { type: String, required: true, unique: true },
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  items: [
-    {
-      itemId: { type: mongoose.Schema.Types.ObjectId, ref: 'CartItem', required: true },
-      name: { type: String, required: true },
-      price: { type: Number, required: true },
-      quantity: { type: Number, default: 1 },
+    productDetails: {
+        type: Array,
+        default: [],
     },
-  ],
-  paymentToken: { type: String, required: true },
-  totalAmount: { type: Number, required: true },
-  status: { type: String, default: 'pending' },
-  createdAt: { type: Date, default: Date.now },
+    email: {
+        type: String,
+        default: "",
+    },
+    userId: {
+        type: String,
+        default: "",
+    },
+    paymentDetails: {
+        paymentId: {
+            type: String,
+            default: "",
+        },
+        payment_method_type: {
+            type: Array,
+            default: [],
+        },
+        payment_status: {
+            type: String,
+            default: "",
+        },
+    },
+    shipping_options: {
+        type: Array,
+        default: [],
+    },
+    shipping_details: {
+        type: Object,
+        default: {},
+    },
+    totalAmount: {
+        type: Number,
+        default: 0,
+    },
+}, {
+    timestamps: true
 });
 
-export default mongoose.model('OrderDetails', orderSchema);
+// ✅ Prevent OverwriteModelError by checking if model exists
+const OrderProduct = mongoose.models.OrderProduct || mongoose.model('OrderProduct', orderSchema);
+
+module.exports = OrderProduct;

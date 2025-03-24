@@ -11,7 +11,7 @@ const Success = () => {
         to="/order" // Redirect to the /order page
         className="mt-6 px-4 py-2 border-2 border-green-600 text-green-600 font-semibold rounded hover:bg-green-600 hover:text-white transition duration-300"
       >
-        See Order
+        See Order History
       </Link>
     </div>
   );

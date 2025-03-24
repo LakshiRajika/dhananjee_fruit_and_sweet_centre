@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'; // Import uuid package
 import CartItem from "../models/CartItemSchema.js";
-import Order from "../models/order.model.js"; // Import Order schema
 import Stripe from 'stripe';
 const stripe = Stripe("sk_test_51R1EIIDWYegqaTAkSR8SSLTlROdixGUzqEpC8eeMTe3ce8ALYEqNqOxkzgGEhI0kEqqy4XL9VU9hy8BRkSbMSII300aF88jnvy"); // Store secret key in env vars
 

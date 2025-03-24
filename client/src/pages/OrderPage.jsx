@@ -130,7 +130,7 @@ export default function OrderPage() {
 
   return (
     <div style={{ padding: '20px', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
-      <Card title={`Cart Items - ${cartItems.length} items`}>
+      <Card title={`My Order History`}>
         <Table dataSource={cartItems} columns={columns} rowKey="itemId" />
         <div style={{ marginTop: '20px', textAlign: 'right' }}>
           <Title level={4}>Total: ${total}</Title>
