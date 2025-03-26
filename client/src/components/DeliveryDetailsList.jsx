@@ -39,8 +39,6 @@ export default function DeliveryDetailsList({
   };
 
   const handleDeleteDeliveryDetails = async () => {
-
-    console.log
     try {
       const response = await fetch(`/api/delivery/deleteDeliveryDetails/${detailToDelete}`, {
         method: 'DELETE',
@@ -54,11 +52,7 @@ export default function DeliveryDetailsList({
       if (response.ok) {
         message.success('Delivery details deleted successfully');
   
-        // Close the modal and reset state immediately
-        setIsDeleteModalVisible(false);
-        setDetailToDelete(null);
-  
-        // Then update the parent component's list
+        // Update parent component's state
         onUpdateDeliveryDetails(detailToDelete);
       } else {
         message.error(data.message || 'Failed to delete delivery details');
@@ -67,7 +61,6 @@ export default function DeliveryDetailsList({
       console.error('Error deleting delivery details:', error);
       message.error('An error occurred while deleting delivery details');
     } finally {
-      // Ensure modal is closed even if an error occurs
       setIsDeleteModalVisible(false);
       setDetailToDelete(null);
     }

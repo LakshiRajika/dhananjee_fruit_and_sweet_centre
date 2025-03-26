@@ -37,22 +37,41 @@ export default function CartPage() {
     );
   };
 
+  const handleUpdateDeliveryDetails = (deletedId) => {
+    setDeliveryDetails((prevDetails) =>
+      prevDetails.filter((detail) => detail._id !== deletedId)
+    );
+  };
   useEffect(() => {
     if (userId) {
       // Fetch delivery details
-      fetch(`/api/delivery/getDeliveryDetailsByUser/${userId}`)
-        .then((res) => res.json())
-        .then((data) => {
+      const fetchDeliveryDetails = async () => {
+        try {
+          const response = await fetch(`/api/delivery/getDeliveryDetailsByUser/${userId}`);
+          const data = await response.json();
+          
           console.log("API Response for Delivery Details:", data);
-          const fetchedDeliveryDetails = data?.data || data || [];
+          
+          // Ensure unique delivery details by using Set or filtering
+          const fetchedDeliveryDetails = Array.from(
+            new Set(
+              (data?.data || data || []).map(detail => JSON.stringify(detail))
+            )
+          ).map(detailString => JSON.parse(detailString));
+
           setDeliveryDetails(fetchedDeliveryDetails);
 
           // If there are saved delivery details, select the first one by default
           if (fetchedDeliveryDetails.length > 0) {
             setSelectedDeliveryId(fetchedDeliveryDetails[0]._id);
           }
-        })
-        .catch((error) => console.error("Error fetching delivery details:", error));
+        } catch (error) {
+          console.error("Error fetching delivery details:", error);
+          message.error("Failed to load delivery details");
+        }
+      };
+
+      fetchDeliveryDetails();
 
       // Fetch cart items
       fetch(`/api/cart/items/${userId}`)
@@ -307,13 +326,11 @@ export default function CartPage() {
                     <Col span={12}>
                       <Text strong>Select Delivery Option</Text>
                       <DeliveryDetailsList
-                        deliveryDetails={deliveryDetails}
-                        selectedDeliveryId={selectedDeliveryId}
-                        onSelectDelivery={(id) => {
-                          setSelectedDeliveryId(id);
-                          setIsNewDeliveryDetails(false);
-                        }}
-                      />
+  deliveryDetails={deliveryDetails}
+  selectedDeliveryId={selectedDeliveryId}
+  onSelectDelivery={setSelectedDeliveryId}
+  onUpdateDeliveryDetails={handleUpdateDeliveryDetails} // Pass the function
+/>
                     </Col>
                   </Row>
                 </div>
