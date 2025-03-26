@@ -6,7 +6,7 @@ import {
   Typography, 
   Radio, 
   Tooltip, 
-  Button, 
+  Button,  
   Collapse,
   Descriptions
 } from 'antd';
@@ -106,6 +106,6 @@ export default function DeliveryDetailsList({
           )}
         </Card>
       ))}
-    </div>
-  );
+    </div>
+  );
 }
