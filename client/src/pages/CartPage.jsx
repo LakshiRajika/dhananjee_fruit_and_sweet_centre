@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
-import { message, Card,Modal,Collapse, Radio,Descriptions, Row, Col, Button, Form, InputNumber, Typography, Tooltip, Select, Input, List, Image } from "antd";
-import { DeleteOutlined,DownOutlined, HeartOutlined, MinusOutlined, PlusOutlined } from "@ant-design/icons";
+import { message, Card, Modal, Collapse, Radio, Descriptions, Row, Col, Button, Form, InputNumber, Typography, Tooltip, Select, Input, List, Image } from "antd";
+import { DeleteOutlined, DownOutlined, HeartOutlined, MinusOutlined, PlusOutlined,RollbackOutlined } from "@ant-design/icons";
 import { useSelector } from "react-redux";
 import { loadStripe } from "@stripe/stripe-js";
 import { useNavigate } from "react-router-dom";
@@ -32,7 +32,7 @@ export default function CartPage() {
   }, [currentUser, form]);
 
   const toggleDetailsExpansion = (detailId) => {
-    setExpandedDetails(prevExpanded => 
+    setExpandedDetails(prevExpanded =>
       prevExpanded === detailId ? null : detailId
     );
   };
@@ -46,14 +46,14 @@ export default function CartPage() {
           console.log("API Response for Delivery Details:", data);
           const fetchedDeliveryDetails = data?.data || data || [];
           setDeliveryDetails(fetchedDeliveryDetails);
-          
+
           // If there are saved delivery details, select the first one by default
           if (fetchedDeliveryDetails.length > 0) {
             setSelectedDeliveryId(fetchedDeliveryDetails[0]._id);
           }
         })
         .catch((error) => console.error("Error fetching delivery details:", error));
-      
+
       // Fetch cart items
       fetch(`/api/cart/items/${userId}`)
         .then((res) => res.json())
@@ -68,14 +68,14 @@ export default function CartPage() {
         item.itemId === itemId ? { ...item, quantity } : item
       );
       setCartItems(updatedCartItems);
-  
+
       // Update in backend
       const response = await fetch(`/api/cart/item/${itemId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ quantity }),
       });
-  
+
       if (!response.ok) {
         throw new Error('Failed to update quantity');
       }
@@ -83,13 +83,13 @@ export default function CartPage() {
       console.error('Error updating item quantity:', error);
     }
   };
-  
+
   const handleDelete = async (itemId) => {
     try {
       const response = await fetch(`/api/cart/item/${userId}/${itemId}`, { method: 'DELETE' });
-  
+
       const data = await response.json();
-  
+
       if (response.ok) {
         setCartItems((prevItems) => prevItems.filter((item) => item.itemId !== itemId));
       } else {
@@ -102,31 +102,27 @@ export default function CartPage() {
 
   const handleCheckout = async () => {
     try {
-      // If no saved delivery details selected and not creating new details
-      if (!selectedDeliveryId && !isNewDeliveryDetails) {
-        message.error("Please select a delivery option or add new delivery details.");
-        return;
-      }
-
+    
       // If creating new delivery details, validate the form
       if (isNewDeliveryDetails) {
         await form.validateFields();
       }
 
       const formData = form.getFieldsValue();
-      
+
       // Determine which delivery details to use
-      const deliveryDetailsToUse = isNewDeliveryDetails 
-        ? { ...formData, userId }
-        : deliveryDetails.find(detail => detail._id === selectedDeliveryId);
+      const deliveryDetailsToUse = 
+         { ...formData, userId }
+        
 
       const saveResponse = await fetch("/api/delivery/saveDeliveryDetails", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(isNewDeliveryDetails ? deliveryDetailsToUse : deliveryDetailsToUse), 
+        body: JSON.stringify(deliveryDetailsToUse),
       });
+
 
       const responseData = await saveResponse.json();
       if (!saveResponse.ok) {
@@ -149,18 +145,18 @@ export default function CartPage() {
       const session = await response.json();
 
       if (session.id) {
-        setCartItems([]);  
-        
+        setCartItems([]);
+
         const { error } = await stripe.redirectToCheckout({ sessionId: session.id });
-      
+
         if (!error) {
           // Confirm payment in backend
           const paymentConfirmationResponse = await fetch("/api/payment/confirm-payment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              paymentToken: session.id, 
-              userId: userId, 
+              paymentToken: session.id,
+              userId: userId,
               cartItems: cartItems,
             }),
           });
@@ -168,7 +164,7 @@ export default function CartPage() {
           const confirmationResult = await paymentConfirmationResponse.json();
 
           if (confirmationResult.success) {
-            localStorage.setItem("orderId", confirmationResult.orderId); 
+            localStorage.setItem("orderId", confirmationResult.orderId);
             navigate("/payment-success");
           } else {
             alert("Payment confirmation failed, please try again.");
@@ -186,7 +182,7 @@ export default function CartPage() {
       }
     }
   };
-  
+
   const variant = Form.useWatch("variant", form);
   const formItemLayout = {
     labelCol: {
@@ -198,6 +194,16 @@ export default function CartPage() {
       sm: { span: 14 },
     },
   };
+
+  const toggleDeliveryDetailsMode = () => {
+    setIsNewDeliveryDetails(!isNewDeliveryDetails);
+    
+    // Reset form when switching back to existing details
+    if (!isNewDeliveryDetails) {
+      form.resetFields();
+    }
+  };
+
 
   return (
     <div style={{ padding: "20px", backgroundColor: "#f5f5f5", minHeight: "100vh" }}>
@@ -257,57 +263,69 @@ export default function CartPage() {
             />
           </Card>
 
-          <Card style={{ marginTop: 16, position: "relative"  }}>
+          <Card style={{ marginTop: 16, position: "relative" }}>
             <div ref={formRef}>
-            <Row justify="space-between" align="middle">
-    <Col>
-      <Title style={{ fontSize: 20, margin: 0 }} level={5}>
-        Delivery Details
-      </Title>
-    </Col>
-    <Col>
-      <Button
-        type="primary"
-        style={{ backgroundColor: "#52c41a", borderColor: "#52c41a" }}
-        onClick={() => {
-          setIsNewDeliveryDetails(true);
-          setSelectedDeliveryId(null);
-        }}
-        icon={<PlusOutlined />}
-      >
-        Add New Delivery Details
-      </Button>
-    </Col>
-  </Row>
-  
+              <Row justify="space-between" align="middle">
+                <Col>
+                  <Title style={{ fontSize: 20, margin: 0 }} level={5}>
+                    Delivery Details
+                  </Title>
+                </Col>
+              
+                {deliveryDetails && deliveryDetails.length > 0 && (
+                  <Col>
+                    {!isNewDeliveryDetails ? (
+                      <Button
+                        type="primary"
+                        style={{ backgroundColor: "#52c41a", borderColor: "#52c41a" }}
+                        onClick={() => {
+                          setIsNewDeliveryDetails(true);
+                          setSelectedDeliveryId(null);
+                        }}
+                        icon={<PlusOutlined />}
+                      >
+                        Add New Delivery Details
+                      </Button>
+                    ) : (
+                      <Button
+                        type="primary"
+                        style={{ backgroundColor: "#1890ff", borderColor: "#1890ff" }}
+                        onClick={toggleDeliveryDetailsMode}
+                        icon={<RollbackOutlined />}
+                      >
+                        Use Existing Details
+                      </Button>
+                    )}
+                  </Col>
+                )}
+              </Row>
 
-              {deliveryDetails.length > 0 ? (
-  <div>
-    <Row gutter={16} style={{ marginBottom: 16 }}>
-      <Col span={12}>
-        <Text strong>Select Delivery Option</Text>
-        <DeliveryDetailsList 
-          deliveryDetails={deliveryDetails}
-          selectedDeliveryId={isNewDeliveryDetails ? null : selectedDeliveryId}
-          onSelectDelivery={(id) => {
-            setSelectedDeliveryId(id);
-            setIsNewDeliveryDetails(false);
-          }}
-        />
-      </Col>
-     
-  
+              {/* Scenario 1: Existing Delivery Details and Not Adding New */}
+              {deliveryDetails && deliveryDetails.length > 0 && !isNewDeliveryDetails && (
+                <div>
+                  <Row gutter={16} style={{ marginBottom: 16 }}>
+                    <Col span={12}>
+                      <Text strong>Select Delivery Option</Text>
+                      <DeliveryDetailsList
+                        deliveryDetails={deliveryDetails}
+                        selectedDeliveryId={selectedDeliveryId}
+                        onSelectDelivery={(id) => {
+                          setSelectedDeliveryId(id);
+                          setIsNewDeliveryDetails(false);
+                        }}
+                      />
+                    </Col>
+                  </Row>
+                </div>
+              )}
 
-    </Row>
-    
-  </div>
-) : (
-  
-  <Text type="warning">No saved delivery details. Please fill in the form below.</Text>
-  
-)}
-
-              {(deliveryDetails.length === 0 || isNewDeliveryDetails) && (
+              {/* Scenario 2: No Delivery Details or Adding New Details */}
+              {(isNewDeliveryDetails || !deliveryDetails || deliveryDetails.length === 0) && (
+                <>
+                  {!deliveryDetails || deliveryDetails.length === 0 ? (
+                    <Text type="warning">No saved delivery details. Please fill in the form below.</Text>
+                  ) : null}
+                  
                 <Form
                   {...formItemLayout}
                   form={form}
@@ -405,7 +423,9 @@ export default function CartPage() {
                     </Col>
                   </Row>
                 </Form>
+                </>
               )}
+             
             </div>
           </Card>
         </Col>
@@ -426,11 +446,11 @@ export default function CartPage() {
                 <Text strong>${totalAmount.toFixed(2)}</Text>
               </List.Item>
             </List>
-            <Button 
-              type="primary" 
-              block 
-              style={{ marginTop: 16 }} 
-              onClick={handleCheckout} 
+            <Button
+              type="primary"
+              block
+              style={{ marginTop: 16 }}
+              onClick={handleCheckout}
               disabled={cartItems.length === 0}
             >
               Go to Checkout

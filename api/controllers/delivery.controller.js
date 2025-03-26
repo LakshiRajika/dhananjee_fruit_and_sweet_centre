@@ -61,13 +61,12 @@ export const getDeliveryDetailsByUserId = async (req, res) => {
       return res.status(400).json({ message: "User ID is required!" });
     }
 
-   
 
     // Fetch all deliveries for the user
     const deliveries = await Delivery.find({ userId });
 
     if (!deliveries.length) {
-      return res.status(404).json({ message: "No deliveries found for this user!" });
+      return res.status(200).json([]); // Returning an empty array
     }
 
     res.status(200).json(deliveries);
