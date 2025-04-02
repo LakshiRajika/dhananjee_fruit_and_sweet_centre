@@ -12,15 +12,14 @@ import paymentRoutes from "./routes/payment.route.js";
 import orderRoutes from "./routes/order.route.js";
 import feedbackRoutes from "./routes/feedback.route.js";
 import deliveryRoutes from "./routes/delivery.route.js";
-import orderRoutes from './routes/order.route.js';  
-import cookieParser from 'cookie-parser';
+
+
 import admin from "./config/firebase.js";
-import cors from 'cors';
+
 import { stripeRawBodyMiddleware } from './middleware/stripeRawBoady.js';
 import inventoryRoutes from "./routes/inventory.route.js";
 
-import bodyParser from 'body-parser';
-import deliveryRoutes from "./routes/delivery.route.js"; 
+
 
 
 console.log("Delivery routes loaded");
