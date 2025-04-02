@@ -1,199 +1,227 @@
 import React, { useState } from "react";
-import "../assests/InsertProduct.css";
+import { 
+  Form, 
+  Input, 
+  Select, 
+  InputNumber, 
+  Button, 
+  Upload, 
+  Typography, 
+  Card, 
+  message, 
+  Row, 
+  Col,
+  Layout
+} from "antd";
+import { UploadOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import styles from '../Style.module.css'
+import Notification from "../components/Notification";
+import { message as antMessage } from "antd";
+import { toast } from "react-toastify";
+
+const { Title } = Typography;
+const { TextArea } = Input;
+const { Option } = Select;
+const { Content } = Layout;
 
 const InsertProduct = () => {
-    const navigate = useNavigate();
-    const [inventoryData, setInventoryData] = useState({
-        product_ID: "",
-        name: "",
-        category: "",
-        description: "",
-        price: "",
-        quantity: "",
-        image: null, 
-      
-    });
+  const navigate = useNavigate();
+  const [form] = Form.useForm();
+  const [previewImage, setPreviewImage] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [fileList, setFileList] = useState([]);
 
-    const [previewImage, setPreviewImage] = useState(null); // Image preview state
-    const [message, setMessage] = useState("");
-    const [messageType, setMessageType] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setInventoryData({
-            ...inventoryData,
-            [name]: value,
-        });
-    };
-
-    // Handle image file selection
-    const handleImageChange = (e) => {
-        const file = e.target.files[0];
-        setInventoryData({
-            ...inventoryData,
-            image: file, // Save file to state
-        });
-
-        // Generate preview
+  const handleImageChange = ({ fileList: newFileList, file }) => {
+    setFileList(newFileList);
+    
+    if (file.status === 'done' || file.status === 'uploading') {
+      // Generate preview
+      if (file.originFileObj) {
         const reader = new FileReader();
         reader.onloadend = () => {
-            setPreviewImage(reader.result);
+          setPreviewImage(reader.result);
         };
-        if (file) {
-            reader.readAsDataURL(file);
-        }
-    };
+        reader.readAsDataURL(file.originFileObj);
+      }
+    }
+  };
 
-    const validateForm = () => {
-        return (
-            inventoryData.product_ID &&
-            inventoryData.name &&
-            inventoryData.category &&
-            inventoryData.description &&
-            inventoryData.price &&
-            inventoryData.quantity &&
-            inventoryData.image // Ensure image is uploaded
-        );
-    };
+  const validateForm = (values) => {
+    if (!fileList.length || !fileList[0].originFileObj) {
+      toast.error("Please upload a product image");
+      return false;
+    }
+    return true;
+  };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+  const handleSubmit = async (values) => {
+    if (!validateForm(values)) {
+      return;
+    }
 
-        if (!validateForm()) {
-            setMessage("Please fill out all fields and upload an image.");
-            setMessageType("error");
-            return;
-        }
+    setIsLoading(true);
 
-        if (isNaN(inventoryData.price) || inventoryData.price <= 0) {
-            setMessage("Price must be a positive number.");
-            setMessageType("error");
-            return false;
-        }
+    const formData = new FormData();
+    formData.append("name", values.name);
+    formData.append("category", values.category);
+    formData.append("description", values.description);
+    formData.append("price", values.price);
+    formData.append("quantity", values.quantity);
+    formData.append("image", fileList[0].originFileObj);
+
+    try {
+      await axios.post("http://localhost:3000/api/inventory", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      toast.success(`Product "${values.name}" added successfully!`);
+      form.resetFields();
+      setFileList([]);
+      setPreviewImage(null);
+      
     
-        if (isNaN(inventoryData.quantity) || inventoryData.quantity < 0) {
-            setMessage("Quantity cannot be negative.");
-            setMessageType("error");
-            return false;
-        }
+    } catch (err) {
+        toast.error("Product not added successfully!");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-        setIsLoading(true);
+  return (
+    <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
+      <Content style={{ padding: '24px' }}>
+        <Card style={{ width: '100%' ,padding: 20, boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)", borderRadius: 10, background: "white" }}>
+          <Title level={2} style={{ textAlign: "left", marginBottom: 24 }}>
+            Add New Product
+          </Title>
 
-        const formData = new FormData();
-        formData.append("product_ID", inventoryData.product_ID);
-        formData.append("name", inventoryData.name);
-        formData.append("category", inventoryData.category);
-        formData.append("description", inventoryData.description);
-        formData.append("price", inventoryData.price);
-        formData.append("quantity", inventoryData.quantity);
-        formData.append("image", inventoryData.image); // Append image file
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleSubmit}
+            requiredMark={false}
+          >
+            <Row gutter={24}>
 
-        try {
-            await axios.post("http://localhost:3000/api/inventory", formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data", // Ensure correct headers
-                },
-            });
+            <Col xs={24} lg={12}>
+                <Form.Item
+                  name="name"
+                  label="Product Name"
+                  rules={[{ required: true, message: "Please enter product name" }]}
+                >
+                  <Input placeholder="Enter product name" className={styles["ant-input"]} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} lg={12}>
+              <Form.Item
+                  name="category"
+                  label="Category"
+                  rules={[{ required: true, message: "Please select a category" }]}
+                >
+                  <Select placeholder="Select a category">
+                    <Option value="fruit">Fruits</Option>
+                    <Option value="sweet">Sweets</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+             
+            </Row>
 
-            setInventoryData({
-                product_ID: "",
-                name: "",
-                category: "",
-                description: "",
-                price: "",
-                quantity: "",
-                image: null,
-            });
+            <Row gutter={24}>
+              
+              <Col xs={24} lg={12}>
+              <Form.Item
+  name="price"
+  label="Price"
+  rules={[
+    { required: true, message: "Please enter price" },
+    { type: "number", min: 0.01, message: "Price must be greater than 0" }
+  ]}
+  normalize={value => (value ? Number(value) : 0)} // Ensures number conversion
+>
+  <InputNumber
+    style={{ width: "100%" }}
+    placeholder="0.00"
+    formatter={value => `Rs ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+    parser={value => value.replace(/[^\d.]/g, '')} // Ensure proper number parsing
+  />
+</Form.Item>
+              </Col>
+              <Col xs={24} lg={12}>
+                <Form.Item
+                  name="quantity"
+                  label="Quantity"
+                  rules={[
+                    { required: true, message: "Please enter quantity" },
+                    { type: "number", min: 0, message: "Quantity cannot be negative" }
+                  ]}
+                >
+                  <InputNumber style={{ width: "100%" }} placeholder="0" min={0} />
+                </Form.Item>
+              </Col>
+            </Row>
 
-            setPreviewImage(null); // Reset preview image
+            <Form.Item
+              name="description"
+              label="Description"
+              rules={[{ required: true, message: "Please enter product description" }]}
+            >
+              <TextArea rows={4} placeholder="Enter product description" />
+            </Form.Item>
 
-            setMessage("Product added successfully!");
-            setMessageType("success");
-            setIsLoading(false);
-
-            setTimeout(() => {
-                navigate("/");
-            }, 500);
-        } catch (err) {
-            setMessage("Error adding product. Please try again.");
-            setMessageType("error");
-            setIsLoading(false);
-        }
-    };
-
-    return (
-        <div>
-            <div className="divcontainer">
-                <h2>Add Product</h2>
-
-                {message && (
-                    <div className={`message ${messageType === "success" ? "success" : "error"}`}>
-                        {message}
-                    </div>
+            <Row gutter={24}>
+              <Col xs={24} md={12}>
+                <Form.Item
+                  name="image"
+                  label="Product Image"
+                  rules={[{ required: true, message: "Please upload an image" }]}
+                >
+                  <Upload
+                    listType="picture"
+                    maxCount={1}
+                    fileList={fileList}
+                    onChange={handleImageChange}
+                    beforeUpload={() => false}
+                  >
+                    <Button icon={<UploadOutlined />}>Select Image</Button>
+                  </Upload>
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                {previewImage && (
+                  <div style={{ marginTop: 24, textAlign: "center" }}>
+                    <img
+                      src={previewImage}
+                      alt="Product Preview"
+                      style={{ maxWidth: "100%", maxHeight: 200 }}
+                    />
+                  </div>
                 )}
+              </Col>
+            </Row>
 
-                <form onSubmit={handleSubmit}>
-                    <div className="form-group">
-                        <label htmlFor="product_ID">Product ID</label>
-                        <input type="text" id="product_ID" name="product_ID" onChange={handleChange} value={inventoryData.product_ID} />
-                    </div>
+            <Form.Item style={{ marginTop: 16 }}>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={isLoading}
+                block
+                style={{ backgroundColor: "#1890ff", height: 40 }}
+              >
+                {isLoading ? "Adding Product..." : "Add Product"}
+              </Button>
+            </Form.Item>
+          </Form>
+         
 
-                    <div className="form-group">
-                        <label htmlFor="name">Product Name</label>
-                        <input type="text" id="name" name="name" onChange={handleChange} value={inventoryData.name} />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="category">Category</label>
-                        <select id="category" name="category" onChange={handleChange} value={inventoryData.category}>
-                            <option value="">Select a Category</option>
-                            <option value="Imported">Imported Fruits</option>
-                            <option value="Local">Local Fruits</option>
-                        </select>
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="description">Description</label>
-                        <textarea id="description" name="description" rows="3" onChange={handleChange} value={inventoryData.description}></textarea>
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="price">Price</label>
-                        <input type="text" id="price" name="price" onChange={handleChange} value={inventoryData.price} />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="quantity">Quantity</label>
-                        <input type="number" id="quantity" name="quantity" onChange={handleChange} value={inventoryData.quantity} />
-                    </div>
-
-                
-                    {/* Image Upload Field */}
-                    <div className="form-group">
-                        <label htmlFor="image">Product Image</label>
-                        <input type="file" id="image" name="image" accept="image/*" onChange={handleImageChange} />
-                    </div>
-
-                    {/* Image Preview */}
-                    {previewImage && (
-                        <div className="image-preview">
-                            <p>Image Preview:</p>
-                            <img src={previewImage} alt="Preview" width="150px" />
-                        </div>
-                    )}
-
-                    <div className="form-group">
-                        <button type="submit" disabled={isLoading}>
-                            {isLoading ? "Adding..." : "Submit"}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
+        </Card>
+      </Content>
+    </Layout>
+  );
 };
 
 export default InsertProduct;

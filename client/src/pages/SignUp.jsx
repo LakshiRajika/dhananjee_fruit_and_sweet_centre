@@ -19,6 +19,15 @@ export default function SignUp() {
     if (!formData.username || !formData.email || !formData.password) {
       return setErrorMessage("Please fill out all fields.");
     }
+
+    // Regular expression for validating email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    // Validate email format
+     if (!emailRegex.test(formData.email)) {
+          return setErrorMessage("Please enter a valid email address");
+        }
+
     try {
       setLoading(true);
       setErrorMessage(null);
@@ -76,7 +85,9 @@ export default function SignUp() {
                 placeholder="harshanaeshan2002@gmail.com"
                 id="email"
                 onChange={handleChange}
+                color={errorMessage ? "failure" : "gray"} // Show red border if there's an error
               />
+              {errorMessage && <p className="text-red-500 text-sm mt-1">{errorMessage}</p>} {/* errorMessage */}
             </div>
             <div>
               <Label value="Your password" />
@@ -101,7 +112,7 @@ export default function SignUp() {
                 "Sign Up"
               )}
             </Button>
-            <OAuth/>
+            <OAuth />
           </form>
           <div className="flex gap-2 text-sm mt-5">
             <span>Have an account?</span>

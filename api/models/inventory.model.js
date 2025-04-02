@@ -6,7 +6,7 @@ const inventorySchema = new mongoose.Schema({
   product_ID: { type: String, required: true,unique:true },
   name: { type: String, required: true },
   description: { type: String, required: true },
-  category: { type: String, required: true ,enum:["Imported","Local"]},
+  category: { type: String, required: true ,enum:["fruit","sweet"]},
   price: { type: Number, required: true,min:1 },
   quantity: { type: Number, required: true, default: 0 }, 
   image: { type: String,required:true },

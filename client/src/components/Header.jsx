@@ -95,6 +95,7 @@ export default function Header() {
             </Link>
             <Dropdown.Divider />
             <Dropdown.Item onClick={handleSignout}>Sign out</Dropdown.Item>
+            {/* drop down done*/}
           </Dropdown>
         ) : (
           <Link to="/sign-in">

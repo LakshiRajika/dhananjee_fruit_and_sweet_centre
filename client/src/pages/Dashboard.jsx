@@ -18,6 +18,7 @@ import AdminDeliveryManagement from './AdminDeliveryManagement';
 export default function Dashboard() {
   const location = useLocation();
   const [tab, setTab] = useState("");
+
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const tabFromUrl = urlParams.get("tab");
@@ -45,6 +46,8 @@ export default function Dashboard() {
       {tab === "comments" && <DashComments />}
       {tab === "delivery-details" && <AdminDeliveryManagement />}
       {tab === "dash" && <DashboardComp />}
+      {/* Render the feedback page  correct*/}
+      {tab === "feedback" && <Feedback />}
     </div>
   );
 }

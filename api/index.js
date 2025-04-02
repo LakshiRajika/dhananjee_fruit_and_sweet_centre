@@ -21,7 +21,6 @@ import inventoryRoutes from "./routes/inventory.route.js";
 
 
 
-
 console.log("Delivery routes loaded");
 
 
@@ -37,7 +36,7 @@ const app = express();
 // ✅ Fix CORS Issue
 app.use(
   cors({
-    origin: "http://localhost:5173", // Explicitly allow frontend
+    origin: "http://localhost:5173", 
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
@@ -61,18 +60,15 @@ app.use("/api/user", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/payment", paymentRoutes);
-app.use("/api/order", orderRoutes);
-app.use('/api/cart', cartRoutes);
-app.use('/api/payment', paymentRoutes); 
-app.use('/api/order', orderRoutes); 
-app.use('/api/delivery', deliveryRoutes);// Order routes (e.g., fetching order details)
+app.use("/api/order", orderRoutes); 
+app.use('/api/delivery', deliveryRoutes);
 app.use("/api/inventory", inventoryRoutes);
 
 console.log("✅ Registering delivery routes...");
 app.use("/api/delivery", deliveryRoutes);
 app.use("/api/feedback", feedbackRoutes);
 
-// ✅ Error Handling Middleware
+
 app.use((err, req, res, next) => {
   res.status(err.statusCode || 500).json({
     success: false,
