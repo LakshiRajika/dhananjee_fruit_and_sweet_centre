@@ -66,7 +66,7 @@ export default function CartPage() {
     try {
       const response = await axios.get(`http://localhost:3000/api/cart/items/${currentUser._id}`);
       if (response.data.success) {
-        setCartItems(response.data.data);
+        setCartItems(response.data.data || []);
       } else {
         message.error('Failed to fetch cart items');
       }
@@ -89,6 +89,12 @@ export default function CartPage() {
 
   const handleQuantityChange = async (itemId, newQuantity) => {
     try {
+      // Validate quantity is at least 1
+      if (newQuantity < 1) {
+        message.error('Quantity cannot be less than 1');
+        return;
+      }
+
       const response = await axios.put(`http://localhost:3000/api/cart/item/${itemId}`, {
         quantity: newQuantity
       });
@@ -121,6 +127,50 @@ export default function CartPage() {
     }
   };
 
+  // Add this function to check if an item can be added
+  const canAddItem = (itemId) => {
+    // If cart is empty, allow adding
+    if (cartItems.length === 0) {
+      return true;
+    }
+    
+    // If item already exists in cart, don't allow adding
+    if (cartItems.some(item => item.itemId === itemId)) {
+      message.error('This item is already in your cart');
+      return false;
+    }
+    
+    // If cart has an item, don't allow adding another
+    message.error('You can only have one item in your cart at a time');
+    return false;
+  };
+
+  // Add this function to handle adding items to cart
+  const handleAddToCart = async (item) => {
+    if (!canAddItem(item.itemId)) {
+      return;
+    }
+
+    try {
+      const response = await axios.post('http://localhost:3000/api/cart/add', {
+        userId: currentUser._id,
+        itemId: item.itemId,
+        quantity: 1,
+        name: item.name,
+        price: item.price,
+        image: item.image
+      });
+
+      if (response.data.success) {
+        setCartItems([{ ...item, quantity: 1 }]);
+        message.success('Item added to cart');
+      }
+    } catch (error) {
+      console.error('Error adding item to cart:', error);
+      message.error('Failed to add item to cart');
+    }
+  };
+
   const handleDeliveryDetailsSubmit = async (values) => {
     try {
       const response = await axios.post('http://localhost:3000/api/delivery/saveDeliveryDetails', {
@@ -139,6 +189,57 @@ export default function CartPage() {
       message.error('Failed to save delivery details');
     }
   };
+
+  // Add this useEffect to check for completed orders and clear cart
+  useEffect(() => {
+    const clearCartAndStorage = async () => {
+      try {
+        // Clear from backend
+        await axios.delete(`http://localhost:3000/api/cart/clear/${currentUser._id}`);
+        
+        // Clear from localStorage
+        localStorage.removeItem('cartItems');
+        localStorage.removeItem('pendingOrder');
+        
+        // Clear from state
+        setCartItems([]);
+      } catch (error) {
+        console.error('Error clearing cart:', error);
+      }
+    };
+
+    // Check if we're coming from a successful payment
+    const isFromPaymentSuccess = window.location.search.includes('payment_success=true');
+    if (isFromPaymentSuccess) {
+      clearCartAndStorage();
+    } else {
+      // Fetch fresh cart items
+      fetchCartItems();
+    }
+  }, [currentUser?._id]);
+
+  // Add this useEffect to forcefully clear cart on mount
+  useEffect(() => {
+    const clearAllCartData = async () => {
+      try {
+        // Clear from backend
+        await axios.delete(`http://localhost:3000/api/cart/clear/${currentUser._id}`);
+        
+        // Clear all localStorage items related to cart
+        localStorage.removeItem('cartItems');
+        localStorage.removeItem('pendingOrder');
+        localStorage.removeItem('cart');
+        
+        // Clear from state
+        setCartItems([]);
+      } catch (error) {
+        console.error('Error clearing cart:', error);
+      }
+    };
+
+    // Clear cart on component mount
+    clearAllCartData();
+  }, [currentUser?._id]);
 
   const handleCheckout = async () => {
     try {
@@ -178,61 +279,26 @@ export default function CartPage() {
 
       // Create order details
       const orderDetails = {
-        items: cartItems.map(item => {
-          // Handle image URL
-          let imageUrl = item.image;
-          if (imageUrl && !imageUrl.startsWith('http')) {
-            if (imageUrl.startsWith('/')) {
-              imageUrl = imageUrl.substring(1);
-            }
-            imageUrl = `http://localhost:3000/${imageUrl}`;
-          }
-
-          return {
-            userId: currentUser._id,
-            name: item.name,
-            price: Number(item.price),
-            quantity: Number(item.quantity) || 1,
-            image: imageUrl || ''
-          };
-        }),
+        items: cartItems.map(item => ({
+          userId: currentUser._id,
+          name: item.name,
+          price: Number(item.price),
+          quantity: Number(item.quantity) || 1,
+          image: item.image.startsWith('http') ? item.image : `http://localhost:3000${item.image}`
+        })),
         totalAmount: cartItems.reduce((total, item) => total + (Number(item.price) * (Number(item.quantity) || 1)), 0),
         userDeliveryDetailsId: deliveryDetailsId,
         orderId: `ORD-${Date.now()}`,
         paymentMethod: selectedPaymentMethod
       };
 
-      console.log("Sending order details:", orderDetails);
+      // Clear cart before proceeding with payment
+      await clearCart();
 
-      // Create checkout session
-      const response = await fetch('http://localhost:3000/api/payment/create-checkout-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify(orderDetails),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Server error response:", errorData);
-        setError(errorData.message || 'Failed to create checkout session');
-        return;
-      }
-
-      const data = await response.json();
-      console.log("Server response:", data);
-      
-      if (!data.success) {
-        setError(data.message || 'Failed to create checkout session');
-        return;
-      }
-
-      // Handle different payment methods
       if (selectedPaymentMethod === 'cash') {
-        navigate('/payment-success', { 
+        // Clear cart again before navigation
+        await clearCart();
+        navigate('/payment-success?payment_success=true', { 
           state: { 
             orderDetails: {
               ...orderDetails,
@@ -242,19 +308,22 @@ export default function CartPage() {
           }
         });
       } else if (selectedPaymentMethod === 'stripe') {
+        const response = await fetch('http://localhost:3000/api/payment/create-checkout-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify(orderDetails),
+        });
+
+        const data = await response.json();
+        
         if (data.url) {
-          // Store order details in localStorage before redirecting
-          localStorage.setItem('pendingOrder', JSON.stringify({
-            ...orderDetails,
-            status: 'Processing',
-            paymentMethod: 'Credit/Debit Card'
-          }));
-          
-          console.log("Redirecting to Stripe checkout:", data.url);
+          // Clear cart before redirecting to payment
+          await clearCart();
           window.location.replace(data.url);
-        } else {
-          console.error("No Stripe URL received in response");
-          setError('Failed to get Stripe checkout URL');
         }
       }
     } catch (error) {
@@ -328,11 +397,45 @@ export default function CartPage() {
     setError(null);
   };
 
+  const clearCart = async () => {
+    try {
+      // Clear from backend
+      const response = await axios.delete(`http://localhost:3000/api/cart/clear/${currentUser._id}`);
+      
+      if (response.data.success) {
+        // Clear all localStorage items related to cart
+        localStorage.removeItem('cartItems');
+        localStorage.removeItem('pendingOrder');
+        localStorage.removeItem('cart');
+        
+        // Clear from state
+        setCartItems([]);
+      }
+    } catch (error) {
+      console.error('Error clearing cart:', error);
+    }
+  };
+
   return (
     <div style={{ padding: "20px", backgroundColor: "#f5f5f5", minHeight: "100vh" }}>
       <Row gutter={16} justify="center">
         <Col md={16}>
-          <Card title={`Cart - ${cartItems.length} items`}>
+          <Card>
+            <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
+              <Col>
+                <Title level={4} style={{ margin: 0 }}>Cart - {cartItems.length} items</Title>
+              </Col>
+              <Col>
+                <Button 
+                  type="primary"
+                  icon={<HeartOutlined />}
+                  onClick={handleWishlistRedirect}
+                  style={{ backgroundColor: "#ff4d4f", borderColor: "#ff4d4f" }}
+                >
+                  View Wishlist
+                </Button>
+              </Col>
+            </Row>
             <List
               dataSource={cartItems}
               renderItem={(item) => (
@@ -362,9 +465,6 @@ export default function CartPage() {
                           onClick={() => handleDeleteItem(item.itemId)}
                         />
                       </Tooltip>
-                      <Tooltip title="Move to wishlist">
-                        <Button type="text" icon={<HeartOutlined />} />
-                      </Tooltip>
                     </Col>
                     <Col span={6}>
                       <InputNumber
@@ -391,14 +491,6 @@ export default function CartPage() {
                 </List.Item>
               )}
             />
-
-            <Button
-              type="text"
-              icon={<HeartOutlined />}
-              onClick={handleWishlistRedirect}
-            >
-              Go to Wishlist
-            </Button>
           </Card>
 
           <Card style={{ marginTop: 16, position: "relative" }}>

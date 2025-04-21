@@ -14,13 +14,28 @@ export const addToCart = async (req, res) => {
       });
     }
 
+    // Check if this exact item already exists in cart
+    const existingItem = await CartItem.findOne({ 
+      userId, 
+      name, 
+      price, 
+      image 
+    });
+
+    if (existingItem) {
+      return res.status(400).json({
+        success: false,
+        message: "This item is already in your cart"
+      });
+    }
+
     const newCartItem = new CartItem({
       userId, 
       itemId, 
       name, 
       price,
       image,
-      quantity,
+      quantity: 1, // Force quantity to 1
     });
 
     await newCartItem.save();
@@ -61,18 +76,29 @@ export const getCartItems = async (req, res) => {
 export const updateCartItemQuantity = async (req, res) => {
   const { itemId } = req.params;
   const { quantity } = req.body; 
+  
   try {
+    // Validate quantity is a positive number
+    if (quantity < 1) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Quantity must be at least 1' 
+      });
+    }
+
     const updatedItem = await CartItem.findOneAndUpdate(
       { itemId },
       { quantity }, 
       { new: true }
     );
+
     if (!updatedItem) {
       return res.status(404).json({ 
         success: false,
         message: 'Item not found' 
       });
     }
+
     return res.status(200).json({ 
       success: true,
       message: 'Item quantity updated successfully', 

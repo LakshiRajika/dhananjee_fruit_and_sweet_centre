@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Card, Col, Row, Button, Tabs, Spin, message } from "antd";
+import { Card, Col, Row, Button, Tabs, Spin, Modal } from "antd";
 import { AiOutlineShoppingCart } from "react-icons/ai";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
-import { HeartOutlined, HeartFilled } from '@ant-design/icons';
+import { HeartOutlined, HeartFilled, ShoppingCartOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import axios from "axios";
 
 const { TabPane } = Tabs;
@@ -16,7 +16,29 @@ const Products = () => {
   const currentUser = useSelector((state) => state.user.currentUser);
   const userId = currentUser?._id;
   const [wishlistItems, setWishlistItems] = useState([]);
-  
+
+  // Add states for modals
+  const [cartModalVisible, setCartModalVisible] = useState(false);
+  const [wishlistModalVisible, setWishlistModalVisible] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  const [modalIcon, setModalIcon] = useState(null);
+
+  // Function to show success modal
+  const showSuccessModal = (message, icon) => {
+    setModalMessage(message);
+    setModalIcon(icon);
+    if (icon === 'cart') {
+      setCartModalVisible(true);
+    } else {
+      setWishlistModalVisible(true);
+    }
+    // Auto close after 2 seconds
+    setTimeout(() => {
+      setCartModalVisible(false);
+      setWishlistModalVisible(false);
+    }, 2000);
+  };
+
   // Fetch products from API
   useEffect(() => {
     const fetchProducts = async () => {
@@ -66,10 +88,13 @@ const Products = () => {
     }
   };
 
-  // Function to handle adding an item to the cart
   const addToCart = async (product) => {
     if (!userId) {
-      message.warning("Please log in to add items to the cart");
+      Modal.warning({
+        title: 'Login Required',
+        content: 'Please log in to add items to the cart',
+        centered: true
+      });
       return;
     }
 
@@ -78,7 +103,7 @@ const Products = () => {
       name: product.name,
       price: product.price,
       image: product.image,
-      quantity: 1, // Default quantity
+      quantity: 1,
       category: product.category,
       description: product.description
     };
@@ -93,30 +118,40 @@ const Products = () => {
       const data = await res.json();
 
       if (res.ok) {
-        message.success("Item added to cart successfully!");
+        showSuccessModal(
+          `${product.name} has been added to your cart successfully!`,
+          'cart'
+        );
       } else {
-        message.error(data.message || "Failed to add item to cart");
+        Modal.error({
+          title: 'Failed to Add',
+          content: data.message || "Failed to add item to cart",
+          centered: true
+        });
       }
     } catch (error) {
-      console.error("Error adding to cart:", error);
-      message.error("An error occurred while adding to cart");
+      Modal.error({
+        title: 'Error',
+        content: "An error occurred while adding to cart",
+        centered: true
+      });
     }
   };
 
   const handleAddToWishlist = async (product) => {
     try {
       if (!userId) {
-        message.error('Please login to add items to wishlist');
+        Modal.warning({
+          title: 'Login Required',
+          content: 'Please log in to add items to wishlist',
+          centered: true
+        });
         return;
       }
 
-      console.log('Current user:', currentUser);
-      console.log('Adding product to wishlist:', product);
-
-      // Ensure all required fields are present and properly formatted
       const wishlistItem = {
         userId: userId.toString(),
-        productId: product._id.toString(), // Convert to string to ensure consistency
+        productId: product._id.toString(),
         name: product.name || '',
         price: Number(product.price) || 0,
         image: product.image || '',
@@ -124,36 +159,31 @@ const Products = () => {
         category: product.category || ''
       };
 
-      console.log('Wishlist item to be added:', wishlistItem);
-
       const response = await axios.post(`${SERVER_URL}/api/wishlist/add`, wishlistItem, {
         headers: {
           'Content-Type': 'application/json'
         }
       });
 
-      console.log('Wishlist response:', response.data);
-
       if (response.data.success) {
-        message.success('Added to wishlist');
-        // Update wishlist items state
+        showSuccessModal(
+          `${product.name} has been added to your wishlist successfully!`,
+          'wishlist'
+        );
         setWishlistItems(prevItems => [...prevItems, response.data.data]);
       } else {
-        message.error(response.data.message || 'Failed to add to wishlist');
+        Modal.error({
+          title: 'Failed to Add',
+          content: response.data.message || 'Failed to add to wishlist',
+          centered: true
+        });
       }
     } catch (error) {
-      console.error('Error adding to wishlist:', error);
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
+      Modal.error({
+        title: 'Error',
+        content: 'Failed to add to wishlist. Please try again.',
+        centered: true
       });
-      
-      if (error.response?.data?.message) {
-        message.error(error.response.data.message);
-      } else {
-        message.error('Failed to add to wishlist. Please try again.');
-      }
     }
   };
 
@@ -166,14 +196,54 @@ const Products = () => {
       {loading ? (
         <Spin size="large" />
       ) : (
-        <Tabs type="card" defaultActiveKey="Fruits" tabBarStyle={{ fontSize: 28, fontWeight: "bold" }}>
-          <TabPane tab="Fruits" key="Fruits">
-            <ProductGrid products={products.filter((p) => p.category === "fruit")} addToCart={addToCart} addToWishlist={handleAddToWishlist} isInWishlist={isInWishlist} />
-          </TabPane>
-          <TabPane tab="Sweets" key="Sweets">
-            <ProductGrid products={products.filter((p) => p.category === "sweet")} addToCart={addToCart} addToWishlist={handleAddToWishlist} isInWishlist={isInWishlist} />
-          </TabPane>
-        </Tabs>
+        <>
+          <Tabs type="card" defaultActiveKey="Fruits" tabBarStyle={{ fontSize: 28, fontWeight: "bold" }}>
+            <TabPane tab="Fruits" key="Fruits">
+              <ProductGrid products={products.filter((p) => p.category === "fruit")} addToCart={addToCart} addToWishlist={handleAddToWishlist} isInWishlist={isInWishlist} />
+            </TabPane>
+            <TabPane tab="Sweets" key="Sweets">
+              <ProductGrid products={products.filter((p) => p.category === "sweet")} addToCart={addToCart} addToWishlist={handleAddToWishlist} isInWishlist={isInWishlist} />
+            </TabPane>
+          </Tabs>
+
+          {/* Success Modal for Cart */}
+          <Modal
+            visible={cartModalVisible}
+            footer={null}
+            closable={false}
+            centered
+            maskStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+            bodyStyle={{ 
+              padding: '30px',
+              textAlign: 'center'
+            }}
+          >
+            <div style={{ fontSize: '60px', color: '#52c41a', marginBottom: '20px' }}>
+              <ShoppingCartOutlined />
+            </div>
+            <h3 style={{ color: '#52c41a', marginBottom: '10px' }}>Added to Cart!</h3>
+            <p>{modalMessage}</p>
+          </Modal>
+
+          {/* Success Modal for Wishlist */}
+          <Modal
+            visible={wishlistModalVisible}
+            footer={null}
+            closable={false}
+            centered
+            maskStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+            bodyStyle={{ 
+              padding: '30px',
+              textAlign: 'center'
+            }}
+          >
+            <div style={{ fontSize: '60px', color: '#ff4d4f', marginBottom: '20px' }}>
+              <HeartFilled />
+            </div>
+            <h3 style={{ color: '#ff4d4f', marginBottom: '10px' }}>Added to Wishlist!</h3>
+            <p>{modalMessage}</p>
+          </Modal>
+        </>
       )}
     </div>
   );
