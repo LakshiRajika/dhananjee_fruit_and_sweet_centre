@@ -138,3 +138,31 @@ export const deleteCartItem = async (req, res) => {
     });
   }
 };
+
+// Clear cart for a user
+export const clearCart = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required"
+      });
+    }
+
+    await CartItem.deleteMany({ userId });
+
+    res.status(200).json({
+      success: true,
+      message: "Cart cleared successfully"
+    });
+  } catch (error) {
+    console.error("Error clearing cart:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error clearing cart",
+      error: error.message
+    });
+  }
+};

@@ -6,7 +6,9 @@ import {
   generateOrderPDF,
   generateAllOrdersPDF,
   getAllOrders,
-  generateAdminAllOrdersPDF
+  generateAdminAllOrdersPDF,
+  deleteOrder,
+  deleteAllOrders
 } from '../controllers/order.controller.js';
 
 const router = express.Router();
@@ -17,6 +19,8 @@ router.get('/user/:userId', getUserOrders);
 router.post('/create', createOrder);
 router.get('/pdf/:orderId', generateOrderPDF);
 router.get('/all-pdf/:userId', generateAllOrdersPDF);
+router.delete('/:orderId', deleteOrder);
+router.delete('/user/:userId/all', deleteAllOrders);
 
 // Admin routes
 router.get('/all', getAllOrders);

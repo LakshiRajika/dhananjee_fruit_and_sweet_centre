@@ -98,43 +98,101 @@ const Products = () => {
       return;
     }
 
+    // Validate required fields
+    if (!product.name || !product.price || !product.image) {
+      Modal.error({
+        title: 'Invalid Product',
+        content: 'Product information is incomplete',
+        centered: true
+      });
+      return;
+    }
+
     const cartItem = {
-      userId,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-      quantity: 1,
-      category: product.category,
-      description: product.description
+      userId: userId.toString(),
+      name: product.name.toString(),
+      price: parseFloat(product.price), // Ensure price is a float
+      image: product.image.toString(),
+      quantity: 1
     };
 
+    console.log('Attempting to add to cart:', {
+      url: `${SERVER_URL}/api/cart/add-to-cart`,
+      requestData: JSON.stringify(cartItem, null, 2),
+      userId: userId,
+      product: product
+    });
+
     try {
-      const res = await fetch(`${SERVER_URL}/api/cart/add-to-cart`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(cartItem),
+      const response = await axios.post(`${SERVER_URL}/api/cart/add-to-cart`, cartItem, {
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        }
       });
 
-      const data = await res.json();
+      console.log('Server response:', response.data);
 
-      if (res.ok) {
+      if (response.data.success) {
         showSuccessModal(
           `${product.name} has been added to your cart successfully!`,
           'cart'
         );
+      }
+    } catch (error) {
+      console.error('Error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+        config: {
+          ...error.config,
+          data: JSON.parse(error.config.data)
+        }
+      });
+
+      if (error.response?.status === 400) {
+        if (error.response?.data?.message === "This item is already in your cart") {
+          Modal.info({
+            title: 'Item Already in Cart',
+            content: (
+              <div>
+                <p>{product.name} is already in your cart.</p>
+                <p>Would you like to:</p>
+                <div style={{ marginTop: '10px' }}>
+                  <Button 
+                    type="primary" 
+                    onClick={() => {
+                      window.location.href = '/cart';
+                    }}
+                    style={{ marginRight: '10px' }}
+                  >
+                    Go to Cart
+                  </Button>
+                  <Button 
+                    onClick={() => Modal.destroyAll()}
+                  >
+                    Continue Shopping
+                  </Button>
+                </div>
+              </div>
+            ),
+            centered: true,
+            maskClosable: true
+          });
+        } else {
+          Modal.error({
+            title: 'Error',
+            content: error.response?.data?.message || "An error occurred while adding to cart",
+            centered: true
+          });
+        }
       } else {
         Modal.error({
-          title: 'Failed to Add',
-          content: data.message || "Failed to add item to cart",
+          title: 'Error',
+          content: "An unexpected error occurred. Please try again.",
           centered: true
         });
       }
-    } catch (error) {
-      Modal.error({
-        title: 'Error',
-        content: "An error occurred while adding to cart",
-        centered: true
-      });
     }
   };
 
@@ -150,13 +208,13 @@ const Products = () => {
       }
 
       const wishlistItem = {
-        userId: userId.toString(),
-        productId: product._id.toString(),
-        name: product.name || '',
-        price: Number(product.price) || 0,
-        image: product.image || '',
-        description: product.description || '',
-        category: product.category || ''
+        userId: userId,
+        productId: product._id,
+        name: product.name,
+        price: product.price,
+        image: product.image,
+        description: product.description,
+        category: product.category
       };
 
       const response = await axios.post(`${SERVER_URL}/api/wishlist/add`, wishlistItem, {
@@ -179,9 +237,10 @@ const Products = () => {
         });
       }
     } catch (error) {
+      console.error('Error adding to wishlist:', error);
       Modal.error({
         title: 'Error',
-        content: 'Failed to add to wishlist. Please try again.',
+        content: error.response?.data?.message || 'Failed to add to wishlist. Please try again.',
         centered: true
       });
     }
@@ -197,25 +256,36 @@ const Products = () => {
         <Spin size="large" />
       ) : (
         <>
-          <Tabs type="card" defaultActiveKey="Fruits" tabBarStyle={{ fontSize: 28, fontWeight: "bold" }}>
-            <TabPane tab="Fruits" key="Fruits">
-              <ProductGrid products={products.filter((p) => p.category === "fruit")} addToCart={addToCart} addToWishlist={handleAddToWishlist} isInWishlist={isInWishlist} />
-            </TabPane>
-            <TabPane tab="Sweets" key="Sweets">
-              <ProductGrid products={products.filter((p) => p.category === "sweet")} addToCart={addToCart} addToWishlist={handleAddToWishlist} isInWishlist={isInWishlist} />
-            </TabPane>
-          </Tabs>
+          <Tabs
+            type="card"
+            defaultActiveKey="Fruits"
+            tabBarStyle={{ fontSize: 28, fontWeight: "bold" }}
+            items={[
+              {
+                key: "Fruits",
+                label: "Fruits",
+                children: <ProductGrid products={products.filter((p) => p.category === "fruit")} addToCart={addToCart} addToWishlist={handleAddToWishlist} isInWishlist={isInWishlist} />
+              },
+              {
+                key: "Sweets",
+                label: "Sweets",
+                children: <ProductGrid products={products.filter((p) => p.category === "sweet")} addToCart={addToCart} addToWishlist={handleAddToWishlist} isInWishlist={isInWishlist} />
+              }
+            ]}
+          />
 
           {/* Success Modal for Cart */}
           <Modal
-            visible={cartModalVisible}
+            open={cartModalVisible}
             footer={null}
             closable={false}
             centered
-            maskStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
-            bodyStyle={{ 
-              padding: '30px',
-              textAlign: 'center'
+            styles={{
+              mask: { backgroundColor: 'rgba(0, 0, 0, 0.5)' },
+              body: { 
+                padding: '30px',
+                textAlign: 'center'
+              }
             }}
           >
             <div style={{ fontSize: '60px', color: '#52c41a', marginBottom: '20px' }}>
@@ -227,14 +297,16 @@ const Products = () => {
 
           {/* Success Modal for Wishlist */}
           <Modal
-            visible={wishlistModalVisible}
+            open={wishlistModalVisible}
             footer={null}
             closable={false}
             centered
-            maskStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
-            bodyStyle={{ 
-              padding: '30px',
-              textAlign: 'center'
+            styles={{
+              mask: { backgroundColor: 'rgba(0, 0, 0, 0.5)' },
+              body: { 
+                padding: '30px',
+                textAlign: 'center'
+              }
             }}
           >
             <div style={{ fontSize: '60px', color: '#ff4d4f', marginBottom: '20px' }}>

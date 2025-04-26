@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Card, Typography, List, Button, message, Space } from 'antd';
+import { Card, Typography, List, Button, message, Space, Tag, Descriptions, Spin } from 'antd';
 import { CheckCircleOutlined, ShoppingOutlined, CompassOutlined } from '@ant-design/icons';
 import axios from 'axios';
+import { useSelector } from 'react-redux';
+import { sendPaymentSuccessEmail } from '../api/emailService';
 
 const { Title, Text } = Typography;
 
@@ -11,6 +13,7 @@ export default function PaymentSuccess() {
   const navigate = useNavigate();
   const [orderDetails, setOrderDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+  const currentUser = useSelector((state) => state.user.currentUser);
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -22,6 +25,22 @@ export default function PaymentSuccess() {
           setOrderDetails(orderData);
           localStorage.removeItem('pendingOrder'); // Clear the stored order
           setLoading(false);
+          
+          // Send email notification
+          try {
+            console.log('Preparing to send email with user:', currentUser);
+            const emailData = {
+              ...orderData,
+              userEmail: currentUser?.email
+            };
+            console.log('Sending email with data:', emailData);
+            await sendPaymentSuccessEmail(emailData);
+            message.success('Payment success email sent!');
+          } catch (error) {
+            console.error('Error in PaymentSuccess while sending email:', error);
+            message.error('Failed to send payment success email');
+          }
+          
           return;
         }
 
@@ -29,6 +48,22 @@ export default function PaymentSuccess() {
         if (location.state?.orderDetails) {
           setOrderDetails(location.state.orderDetails);
           setLoading(false);
+          
+          // Send email notification
+          try {
+            console.log('Preparing to send email with user:', currentUser);
+            const emailData = {
+              ...location.state.orderDetails,
+              userEmail: currentUser?.email
+            };
+            console.log('Sending email with data:', emailData);
+            await sendPaymentSuccessEmail(emailData);
+            message.success('Payment success email sent!');
+          } catch (error) {
+            console.error('Error in PaymentSuccess while sending email:', error);
+            message.error('Failed to send payment success email');
+          }
+          
           return;
         }
 
@@ -37,7 +72,23 @@ export default function PaymentSuccess() {
         if (sessionId) {
           const response = await axios.get(`http://localhost:3000/api/payment/order-details/${sessionId}`);
           if (response.data.success) {
-            setOrderDetails(response.data.data);
+            const orderData = response.data.data;
+            setOrderDetails(orderData);
+            
+            // Send email notification
+            try {
+              console.log('Preparing to send email with user:', currentUser);
+              const emailData = {
+                ...orderData,
+                userEmail: currentUser?.email
+              };
+              console.log('Sending email with data:', emailData);
+              await sendPaymentSuccessEmail(emailData);
+              message.success('Payment success email sent!');
+            } catch (error) {
+              console.error('Error in PaymentSuccess while sending email:', error);
+              message.error('Failed to send payment success email');
+            }
           } else {
             message.error('Failed to fetch order details');
           }
@@ -59,9 +110,23 @@ export default function PaymentSuccess() {
     }
   };
 
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'completed':
+        return 'success';
+      case 'processing':
+        return 'processing';
+      case 'pending':
+        return 'warning';
+      default:
+        return 'default';
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
+        <Spin size="large" />
         <Title level={3}>Loading order details...</Title>
       </div>
     );
@@ -87,42 +152,43 @@ export default function PaymentSuccess() {
           <Text type="secondary">Thank you for your purchase</Text>
         </div>
 
-        <Card title="Order Details" style={{ marginBottom: '20px' }}>
-          <List>
-            <List.Item>
-              <Text strong>Order ID:</Text> {orderDetails.orderId}
-            </List.Item>
-            <List.Item>
-              <Text strong>Status:</Text> {orderDetails.status}
-            </List.Item>
-            <List.Item>
-              <Text strong>Payment Method:</Text> {orderDetails.paymentMethod}
-            </List.Item>
-            <List.Item>
-              <Text strong>Total Amount:</Text> ${orderDetails.totalAmount.toFixed(2)}
-            </List.Item>
-            <List.Item>
-              <Text strong>Date:</Text> {new Date(orderDetails.createdAt).toLocaleString()}
-            </List.Item>
-          </List>
-        </Card>
+        <Descriptions title="Order Details" bordered column={2}>
+          <Descriptions.Item label="Order ID">{orderDetails.orderId}</Descriptions.Item>
+          <Descriptions.Item label="Date">{new Date().toLocaleString()}</Descriptions.Item>
+          <Descriptions.Item label="Status">
+            <Tag color={getStatusColor(orderDetails.status)}>
+              {orderDetails.status?.toUpperCase() || 'PROCESSING'}
+            </Tag>
+          </Descriptions.Item>
+          <Descriptions.Item label="Payment Method">
+            {orderDetails.paymentMethod === 'cash' ? 'Cash on Delivery' : 'Online Payment'}
+          </Descriptions.Item>
+          <Descriptions.Item label="Total Amount" span={2}>
+            Rs {orderDetails.totalAmount?.toFixed(2)}
+          </Descriptions.Item>
+        </Descriptions>
 
-        <Card title="Order Items">
+        <Card title="Order Items" style={{ marginTop: '20px' }}>
           <List
             dataSource={orderDetails.items}
             renderItem={item => (
               <List.Item>
-                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
                   <div>
                     <Text strong>{item.name}</Text>
                     <br />
                     <Text type="secondary">Quantity: {item.quantity}</Text>
                   </div>
-                  <Text>${(item.price * item.quantity).toFixed(2)}</Text>
+                  <div>
+                    <Text>Rs {(item.price * item.quantity).toFixed(2)}</Text>
+                  </div>
                 </div>
               </List.Item>
             )}
           />
+          <div style={{ textAlign: 'right', marginTop: '20px', borderTop: '1px solid #f0f0f0', paddingTop: '20px' }}>
+            <Text strong>Total: Rs {orderDetails.totalAmount?.toFixed(2)}</Text>
+          </div>
         </Card>
 
         <div style={{ textAlign: 'center', marginTop: '30px' }}>
@@ -131,7 +197,7 @@ export default function PaymentSuccess() {
               type="primary" 
               size="large" 
               icon={<ShoppingOutlined />}
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/products')}
             >
               Continue Shopping
             </Button>
@@ -140,7 +206,7 @@ export default function PaymentSuccess() {
               size="large"
               onClick={() => navigate('/orders')}
             >
-              See All Orders
+              View All Orders
             </Button>
             <Button
               type="primary"

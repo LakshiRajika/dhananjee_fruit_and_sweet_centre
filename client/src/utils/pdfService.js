@@ -38,26 +38,29 @@ const formatCurrency = (amount) => `Rs ${Number(amount).toFixed(2)}`;
 // Helper function to add page header
 const addPageHeader = (doc, title, subtitle = null) => {
   doc.setFontSize(styles.header.fontSize);
-  doc.setTextColor(...styles.header.color);
+  doc.setTextColor(styles.header.color[0], styles.header.color[1], styles.header.color[2]);
   doc.text(title, 20, 20);
 
   if (subtitle) {
     doc.setFontSize(styles.subHeader.fontSize);
-    doc.setTextColor(...styles.subHeader.color);
+    doc.setTextColor(styles.subHeader.color[0], styles.subHeader.color[1], styles.subHeader.color[2]);
     doc.text(subtitle, 20, 30);
   }
 
-  return doc.previousAutoTableHeight + 40; // Return next Y position
+  return doc.previousAutoTableHeight + 40;
 };
 
 // Helper function to add company info
 const addCompanyInfo = (doc, y) => {
   doc.setFontSize(styles.normal.fontSize);
-  doc.setTextColor(...styles.normal.color);
+  doc.setTextColor(styles.normal.color[0], styles.normal.color[1], styles.normal.color[2]);
+  
+  // Add each line of text with proper positioning
   doc.text('Dhananjee Fruit & Sweet Centre', 20, y);
   doc.text('123 Main Street, Colombo', 20, y + 7);
   doc.text('Tel: +94 77 123 4567', 20, y + 14);
   doc.text('Email: info@dhananjee.com', 20, y + 21);
+  
   return y + 35;
 };
 
@@ -65,8 +68,30 @@ const addCompanyInfo = (doc, y) => {
 export const generateOrderPDF = (order) => {
   try {
     const doc = new jsPDF();
-    let yPos = addPageHeader(doc, 'Order Details', `Order ID: ${order.orderId}`);
-    yPos = addCompanyInfo(doc, yPos);
+    let yPos = 20;
+
+    // Add header
+    doc.setFontSize(styles.header.fontSize);
+    doc.setTextColor(styles.header.color[0], styles.header.color[1], styles.header.color[2]);
+    doc.text('Order Details', 20, yPos);
+    
+    yPos += 10;
+    doc.setFontSize(styles.subHeader.fontSize);
+    doc.setTextColor(styles.subHeader.color[0], styles.subHeader.color[1], styles.subHeader.color[2]);
+    doc.text(`Order ID: ${order.orderId}`, 20, yPos);
+    
+    // Add company info
+    yPos += 20;
+    doc.setFontSize(styles.normal.fontSize);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Dhananjee Fruit & Sweet Centre', 20, yPos);
+    yPos += 7;
+    doc.text('123 Main Street, Colombo', 20, yPos);
+    yPos += 7;
+    doc.text('Tel: +94 77 123 4567', 20, yPos);
+    yPos += 7;
+    doc.text('Email: info@dhananjee.com', 20, yPos);
+    yPos += 15;
 
     // Order Information
     const orderInfo = [
@@ -89,9 +114,11 @@ export const generateOrderPDF = (order) => {
       },
     });
 
+    yPos = doc.lastAutoTable.finalY + 10;
+
     // Items Table
     autoTable(doc, {
-      startY: doc.previousAutoTableHeight + yPos + 10,
+      startY: yPos,
       head: [['Item', 'Quantity', 'Price', 'Total']],
       body: order.items.map(item => [
         item.name,
@@ -104,24 +131,16 @@ export const generateOrderPDF = (order) => {
 
     // Total
     const total = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    yPos = doc.lastAutoTable.finalY + 10;
+    
     doc.setFontSize(styles.subHeader.fontSize);
-    doc.setTextColor(...styles.subHeader.color);
-    doc.text(
-      `Total Amount: ${formatCurrency(total)}`,
-      doc.internal.pageSize.width - 20,
-      doc.previousAutoTableHeight + doc.internal.pageSize.height - 30,
-      { align: 'right' }
-    );
+    doc.setTextColor(styles.subHeader.color[0], styles.subHeader.color[1], styles.subHeader.color[2]);
+    doc.text(`Total Amount: ${formatCurrency(total)}`, doc.internal.pageSize.width - 20, yPos, { align: 'right' });
 
     // Footer
     doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(
-      'Thank you for your business!',
-      doc.internal.pageSize.width / 2,
-      doc.internal.pageSize.height - 20,
-      { align: 'center' }
-    );
+    doc.setTextColor(100, 100, 100);
+    doc.text('Thank you for your business!', doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 20, { align: 'center' });
 
     doc.save(`Order_${order.orderId}.pdf`);
     message.success('PDF generated successfully');
@@ -179,18 +198,7 @@ export const generateAllOrdersPDF = (orders) => {
     });
 
     // Add page numbers
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text(
-        `Page ${i} of ${pageCount}`,
-        doc.internal.pageSize.width / 2,
-        doc.internal.pageSize.height - 10,
-        { align: 'center' }
-      );
-    }
+    addPageNumbers(doc);
 
     doc.save('All_Orders_Report.pdf');
     message.success('PDF generated successfully');
@@ -245,18 +253,7 @@ export const generateProductListPDF = (products) => {
     });
 
     // Add page numbers
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text(
-        `Page ${i} of ${pageCount}`,
-        doc.internal.pageSize.width / 2,
-        doc.internal.pageSize.height - 10,
-        { align: 'center' }
-      );
-    }
+    addPageNumbers(doc);
 
     doc.save('Product_List.pdf');
     message.success('PDF generated successfully');
@@ -264,4 +261,19 @@ export const generateProductListPDF = (products) => {
     console.error('PDF Generation Error:', error);
     message.error('Failed to generate PDF');
   }
-}; 
+};
+
+const addPageNumbers = (doc) => {
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(
+      `Page ${i} of ${pageCount}`,
+      doc.internal.pageSize.width / 2,
+      doc.internal.pageSize.height - 10,
+      { align: 'center' }
+    );
+  }
+};

@@ -15,6 +15,7 @@ import Feedback from './Feedback';
 import AdminOrders from './AdminOrders';
 import DashDeliveries from '../components/DashDeliveries';
 import UserOrders from '../components/UserOrders';
+import AllOrders from '../components/AllOrders';
 
 export default function Dashboard() {
   const location = useLocation();
@@ -46,6 +47,7 @@ export default function Dashboard() {
       {tab === "orders" && <AdminOrders />}
       {tab === "my-orders" && <UserOrders />}
       {tab === "my-deliveries" && <DashDeliveries />}
+      {tab === "all-orders" && <AllOrders />}
     </div>
   );
 }

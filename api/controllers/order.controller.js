@@ -79,6 +79,14 @@ export const getUserOrders = async (req, res) => {
       .sort({ createdAt: -1 })
       .exec();
     
+    if (!orders || orders.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "No orders found for this user",
+        data: []
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: "Orders retrieved successfully",
@@ -591,3 +599,59 @@ export const generateAdminAllOrdersPDF = async (req, res) => {
     });
   }
 };
+
+// Delete an order
+export const deleteOrder = async (req, res) => {
+  const { orderId } = req.params;
+  try {
+    const order = await Order.findOneAndDelete({ orderId });
+    
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found"
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Order deleted successfully",
+      data: order
+    });
+  } catch (error) {
+    console.error("Error deleting order:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error deleting order",
+      error: error.message
+    });
+  }
+};
+
+// Delete all orders for a user
+export const deleteAllOrders = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const result = await Order.deleteMany({ userId });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No orders found to delete"
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Successfully deleted ${result.deletedCount} orders`,
+      data: { deletedCount: result.deletedCount }
+    });
+  } catch (error) {
+    console.error("Error deleting all orders:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error deleting all orders",
+      error: error.message
+    });
+  }
+}; 

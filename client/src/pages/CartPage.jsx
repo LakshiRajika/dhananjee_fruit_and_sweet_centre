@@ -32,6 +32,7 @@ export default function CartPage() {
   const [error, setError] = useState(null);
   const [showBankSlipModal, setShowBankSlipModal] = useState(false);
   const [orderId, setOrderId] = useState(null);
+  const [formData, setFormData] = useState(null);
 
   useEffect(() => {
     if (currentUser?.email) {
@@ -84,6 +85,7 @@ export default function CartPage() {
       }
     } catch (error) {
       console.error('Error fetching delivery details:', error);
+      message.error('Failed to fetch delivery details');
     }
   };
 
@@ -129,20 +131,12 @@ export default function CartPage() {
 
   // Add this function to check if an item can be added
   const canAddItem = (itemId) => {
-    // If cart is empty, allow adding
-    if (cartItems.length === 0) {
-      return true;
-    }
-    
     // If item already exists in cart, don't allow adding
     if (cartItems.some(item => item.itemId === itemId)) {
       message.error('This item is already in your cart');
       return false;
     }
-    
-    // If cart has an item, don't allow adding another
-    message.error('You can only have one item in your cart at a time');
-    return false;
+    return true;
   };
 
   // Add this function to handle adding items to cart
@@ -152,7 +146,7 @@ export default function CartPage() {
     }
 
     try {
-      const response = await axios.post('http://localhost:3000/api/cart/add', {
+      const response = await axios.post('http://localhost:3000/api/cart/add-to-cart', {
         userId: currentUser._id,
         itemId: item.itemId,
         quantity: 1,
@@ -162,7 +156,7 @@ export default function CartPage() {
       });
 
       if (response.data.success) {
-        setCartItems([{ ...item, quantity: 1 }]);
+        setCartItems(prevItems => [...prevItems, { ...item, quantity: 1 }]);
         message.success('Item added to cart');
       }
     } catch (error) {
@@ -173,162 +167,32 @@ export default function CartPage() {
 
   const handleDeliveryDetailsSubmit = async (values) => {
     try {
-      const response = await axios.post('http://localhost:3000/api/delivery/saveDeliveryDetails', {
+      const deliveryData = {
         ...values,
-        userId: currentUser._id
-      });
+        userId: currentUser._id,
+        deliveryType: values.deliveryType.toLowerCase().replace(/\s+/g, '_'),
+        deliveryService: values.deliveryService.toLowerCase(),
+        customerName: values.customerName,
+        mobileNumber: values.mobileNumber,
+        email: values.email,
+        deliveryAddress: values.deliveryAddress,
+        postalCode: values.postalCode,
+        district: values.district
+      };
+
+      const response = await axios.post('http://localhost:3000/api/delivery/saveDeliveryDetails', deliveryData);
 
       if (response.data.success) {
         setDeliveryDetails(prev => [...prev, response.data.data]);
         setSelectedDeliveryId(response.data.data._id);
         setIsNewDeliveryDetails(false);
         message.success('Delivery details saved successfully');
+      } else {
+        message.error(response.data.message || 'Failed to save delivery details');
       }
     } catch (error) {
       console.error('Error saving delivery details:', error);
-      message.error('Failed to save delivery details');
-    }
-  };
-
-  // Add this useEffect to check for completed orders and clear cart
-  useEffect(() => {
-    const clearCartAndStorage = async () => {
-      try {
-        // Clear from backend
-        await axios.delete(`http://localhost:3000/api/cart/clear/${currentUser._id}`);
-        
-        // Clear from localStorage
-        localStorage.removeItem('cartItems');
-        localStorage.removeItem('pendingOrder');
-        
-        // Clear from state
-        setCartItems([]);
-      } catch (error) {
-        console.error('Error clearing cart:', error);
-      }
-    };
-
-    // Check if we're coming from a successful payment
-    const isFromPaymentSuccess = window.location.search.includes('payment_success=true');
-    if (isFromPaymentSuccess) {
-      clearCartAndStorage();
-    } else {
-      // Fetch fresh cart items
-      fetchCartItems();
-    }
-  }, [currentUser?._id]);
-
-  // Add this useEffect to forcefully clear cart on mount
-  useEffect(() => {
-    const clearAllCartData = async () => {
-      try {
-        // Clear from backend
-        await axios.delete(`http://localhost:3000/api/cart/clear/${currentUser._id}`);
-        
-        // Clear all localStorage items related to cart
-        localStorage.removeItem('cartItems');
-        localStorage.removeItem('pendingOrder');
-        localStorage.removeItem('cart');
-        
-        // Clear from state
-        setCartItems([]);
-      } catch (error) {
-        console.error('Error clearing cart:', error);
-      }
-    };
-
-    // Clear cart on component mount
-    clearAllCartData();
-  }, [currentUser?._id]);
-
-  const handleCheckout = async () => {
-    try {
-      if (!selectedPaymentMethod) {
-        setError('Please select a payment method');
-        return;
-      }
-
-      if (!selectedDeliveryId && !isNewDeliveryDetails) {
-        setError('Please select or add delivery details');
-        return;
-      }
-
-      let deliveryDetailsId = selectedDeliveryId;
-
-      // If new delivery details, save them first
-      if (isNewDeliveryDetails) {
-        const formValues = await form.validateFields();
-        const deliveryResponse = await fetch('http://localhost:3000/api/delivery/saveDeliveryDetails', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: currentUser._id,
-            ...formValues
-          }),
-        });
-
-        const deliveryData = await deliveryResponse.json();
-        if (!deliveryData.success) {
-          setError(deliveryData.message || 'Failed to save delivery details');
-          return;
-        }
-        deliveryDetailsId = deliveryData.data._id;
-      }
-
-      // Create order details
-      const orderDetails = {
-        items: cartItems.map(item => ({
-          userId: currentUser._id,
-          name: item.name,
-          price: Number(item.price),
-          quantity: Number(item.quantity) || 1,
-          image: item.image.startsWith('http') ? item.image : `http://localhost:3000${item.image}`
-        })),
-        totalAmount: cartItems.reduce((total, item) => total + (Number(item.price) * (Number(item.quantity) || 1)), 0),
-        userDeliveryDetailsId: deliveryDetailsId,
-        orderId: `ORD-${Date.now()}`,
-        paymentMethod: selectedPaymentMethod
-      };
-
-      // Clear cart before proceeding with payment
-      await clearCart();
-
-      if (selectedPaymentMethod === 'cash') {
-        // Clear cart again before navigation
-        await clearCart();
-        navigate('/payment-success?payment_success=true', { 
-          state: { 
-            orderDetails: {
-              ...orderDetails,
-              status: 'Processing',
-              paymentMethod: 'Cash on Delivery'
-            }
-          }
-        });
-      } else if (selectedPaymentMethod === 'stripe') {
-        const response = await fetch('http://localhost:3000/api/payment/create-checkout-session', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          credentials: 'include',
-          body: JSON.stringify(orderDetails),
-        });
-
-        const data = await response.json();
-        
-        if (data.url) {
-          // Clear cart before redirecting to payment
-          await clearCart();
-          window.location.replace(data.url);
-        }
-      }
-    } catch (error) {
-      console.error('Error during checkout:', error);
-      setError('An error occurred during checkout. Please try again.');
+      message.error('Failed to save delivery details. Please try again.');
     }
   };
 
@@ -397,22 +261,158 @@ export default function CartPage() {
     setError(null);
   };
 
-  const clearCart = async () => {
+  const handleCheckout = async () => {
     try {
-      // Clear from backend
-      const response = await axios.delete(`http://localhost:3000/api/cart/clear/${currentUser._id}`);
-      
-      if (response.data.success) {
-        // Clear all localStorage items related to cart
-        localStorage.removeItem('cartItems');
-        localStorage.removeItem('pendingOrder');
-        localStorage.removeItem('cart');
-        
-        // Clear from state
-        setCartItems([]);
+      if (!selectedPaymentMethod) {
+        message.error('Please select a payment method');
+        return;
+      }
+
+      if (!selectedDeliveryId && !isNewDeliveryDetails) {
+        message.error('Please add delivery details');
+        return;
+      }
+
+      let deliveryId = selectedDeliveryId;
+
+      // If we're using new delivery details, save them first
+      if (isNewDeliveryDetails) {
+        try {
+          const formValues = form.getFieldsValue();
+          const deliveryData = {
+            ...formValues,
+            userId: currentUser._id,
+            deliveryType: formValues.deliveryType.toLowerCase().replace(/\s+/g, '_'),
+            deliveryService: formValues.deliveryService.toLowerCase()
+          };
+
+          const deliveryResponse = await axios.post('http://localhost:3000/api/delivery/saveDeliveryDetails', deliveryData);
+          
+          if (deliveryResponse.data.success) {
+            deliveryId = deliveryResponse.data.data._id;
+            setDeliveryDetails(prev => [...prev, deliveryResponse.data.data]);
+          } else {
+            throw new Error('Failed to save delivery details');
+          }
+        } catch (error) {
+          console.error('Error saving delivery details:', error);
+          message.error('Failed to save delivery details. Please try again.');
+          return;
+        }
+      }
+
+      const orderDetails = {
+        items: cartItems.map(item => ({
+          itemId: item.itemId,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.image
+        })),
+        totalAmount: totalAmount,
+        userDeliveryDetailsId: deliveryId,
+        orderId: `ORD-${Date.now()}`,
+        paymentMethod: selectedPaymentMethod,
+        userId: currentUser._id,
+        customerEmail: currentUser.email
+      };
+
+      // Store order details in localStorage before proceeding
+      localStorage.setItem('pendingOrder', JSON.stringify(orderDetails));
+
+      if (selectedPaymentMethod === 'cash') {
+        try {
+          const orderResponse = await axios.post('http://localhost:3000/api/order/create', orderDetails);
+          
+          if (orderResponse.data.success) {
+            await axios.delete(`http://localhost:3000/api/cart/clear/${currentUser._id}`);
+            setCartItems([]);
+            
+            navigate('/payment-success', { 
+              state: { 
+                orderDetails: {
+                  ...orderDetails,
+                  status: 'Processing',
+                  paymentMethod: 'Cash on Delivery'
+                }
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Error creating order:', error);
+          message.error('Failed to create order. Please try again.');
+        }
+      } else if (selectedPaymentMethod === 'stripe') {
+        try {
+          const response = await axios.post('http://localhost:3000/api/payment/create-checkout-session', orderDetails);
+          
+          if (response.data.url) {
+            await axios.delete(`http://localhost:3000/api/cart/clear/${currentUser._id}`);
+            setCartItems([]);
+            window.location.replace(response.data.url);
+          }
+        } catch (error) {
+          console.error('Error during checkout:', error);
+          message.error('Failed to process payment. Please try again.');
+        }
+      } else if (selectedPaymentMethod === 'bank_slip') {
+        setShowBankSlipModal(true);
+        setOrderId(orderDetails.orderId);
       }
     } catch (error) {
-      console.error('Error clearing cart:', error);
+      console.error('Error during checkout:', error);
+      message.error('An error occurred during checkout. Please try again.');
+    }
+  };
+
+  const handleDeleteDelivery = async (id) => {
+    try {
+      const response = await fetch(`http://localhost:3000/api/delivery/${id}`, {
+        method: "DELETE",
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        // Remove the deleted delivery from the list
+        setDeliveryDetails(prevDetails => 
+          prevDetails.filter(detail => detail._id !== id)
+        );
+        message.success("Delivery details deleted successfully!");
+      } else {
+        message.error(result.message || "Failed to delete delivery details.");
+      }
+    } catch (error) {
+      console.error("Error deleting delivery:", error);
+      message.error("Error deleting delivery. Please try again.");
+    }
+  };
+
+  const handleEditDelivery = async (id) => {
+    try {
+      const response = await axios.get(`http://localhost:3000/api/delivery/detail/${id}`);
+      
+      if (response.data.success) {
+        const delivery = response.data.data;
+        // Set form values with the delivery details
+        form.setFieldsValue({
+          customerName: delivery.customerName,
+          mobileNumber: delivery.mobileNumber,
+          email: delivery.email,
+          deliveryAddress: delivery.deliveryAddress,
+          postalCode: delivery.postalCode,
+          district: delivery.district,
+          deliveryType: delivery.deliveryType,
+          deliveryService: delivery.deliveryService
+        });
+        setIsNewDeliveryDetails(true);
+        message.success("Delivery details loaded for editing");
+      } else {
+        message.error(response.data.message || "Failed to load delivery details");
+      }
+    } catch (error) {
+      console.error("Error loading delivery details:", error);
+      message.error("Error loading delivery details. Please try again.");
     }
   };
 
@@ -453,10 +453,8 @@ export default function CartPage() {
                     </Col>
                     <Col span={10}>
                       <Title level={5}>{item.name}</Title>
-                      <Text>Color: {item.color}</Text>
-                      <br />
-                      <Text>Size: {item.size}</Text>
-                      <br />
+                      <Text>Color: {item.color}</Text><br />
+                      <Text>Size: {item.size}</Text><br />
                       <Tooltip title="Remove item">
                         <Button
                           type="text"
@@ -492,7 +490,7 @@ export default function CartPage() {
               )}
             />
           </Card>
-
+  
           <Card style={{ marginTop: 16, position: "relative" }}>
             <div ref={formRef}>
               <Row justify="space-between" align="middle">
@@ -501,7 +499,6 @@ export default function CartPage() {
                     Delivery Details
                   </Title>
                 </Col>
-              
                 {deliveryDetails && deliveryDetails.length > 0 && (
                   <Col>
                     {!isNewDeliveryDetails ? (
@@ -529,7 +526,7 @@ export default function CartPage() {
                   </Col>
                 )}
               </Row>
-
+  
               {deliveryDetails && deliveryDetails.length > 0 && !isNewDeliveryDetails && (
                 <div>
                   <Row gutter={16} style={{ marginBottom: 16 }}>
@@ -540,18 +537,20 @@ export default function CartPage() {
                         selectedDeliveryId={selectedDeliveryId}
                         onSelectDelivery={setSelectedDeliveryId}
                         onUpdateDeliveryDetails={handleUpdateDeliveryDetails}
+                        onDeleteDelivery={handleDeleteDelivery}
+                        onEditDelivery={handleEditDelivery}
                       />
                     </Col>
                   </Row>
                 </div>
               )}
-
+  
               {(isNewDeliveryDetails || !deliveryDetails || deliveryDetails.length === 0) && (
                 <>
                   {!deliveryDetails || deliveryDetails.length === 0 ? (
                     <Text type="warning">No saved delivery details. Please fill in the form below.</Text>
                   ) : null}
-                  
+  
                   <Form
                     {...formItemLayout}
                     form={form}
@@ -598,7 +597,7 @@ export default function CartPage() {
                           <Input className={styles["ant-input"]} />
                         </Form.Item>
                       </Col>
-
+  
                       <Col span={12}>
                         <Form.Item
                           label="Delivery Type"
@@ -607,11 +606,10 @@ export default function CartPage() {
                         >
                           <Select placeholder="Select Delivery Type">
                             <Select.Option value="stripe">Online Payment (Stripe)</Select.Option>
-                            <Select.Option value="bank_slip">Bank Slip Payment</Select.Option>
                             <Select.Option value="cash">Cash On Delivery</Select.Option>
                           </Select>
                         </Form.Item>
-
+  
                         <Form.Item
                           label={
                             <div style={{ whiteSpace: "pre-line" }}>
@@ -657,7 +655,7 @@ export default function CartPage() {
                             .then(() => {
                               message.success("Delivery details saved!");
                             })
-                            .catch((error) => {
+                            .catch(() => {
                               message.error("Please fill in all required fields!");
                             });
                         }}
@@ -671,7 +669,7 @@ export default function CartPage() {
             </div>
           </Card>
         </Col>
-
+  
         <Col md={8}>
           <Card title="Order Summary">
             <List>
@@ -688,7 +686,7 @@ export default function CartPage() {
                 <Text strong>${totalAmount.toFixed(2)}</Text>
               </List.Item>
             </List>
-
+  
             <Form.Item
               name="paymentMethod"
               label="Payment Method"
@@ -696,98 +694,39 @@ export default function CartPage() {
               initialValue="cash"
               rules={[{ required: true, message: 'Please select a payment method!' }]}
             >
-              <Select 
-                value={selectedPaymentMethod}
-                onChange={(value) => {
-                  setSelectedPaymentMethod(value);
-                  if (value !== 'bank_slip') {
-                    setIsBankSlipModalVisible(false);
-                  }
-                }}
-                style={{ width: '100%' }}
+              <Form
+                name="payment-form"
+                initialValues={{ paymentMethod: selectedPaymentMethod }}
               >
-                <Select.Option value="cash">Cash on Delivery</Select.Option>
-                <Select.Option value="stripe">Credit/Debit Card</Select.Option>
-                <Select.Option value="bank_slip">Bank Slip</Select.Option>
-              </Select>
+                <Form.Item name="paymentMethod">
+                  <Select 
+                    value={selectedPaymentMethod}
+                    onChange={(value) => {
+                      setSelectedPaymentMethod(value);
+                    }}
+                    style={{ width: '100%' }}
+                  >
+                    <Select.Option value="cash">Cash on Delivery</Select.Option>
+                    <Select.Option value="stripe">Credit/Debit Card</Select.Option>
+                  </Select>
+                </Form.Item>
+              </Form>
             </Form.Item>
-
-          <Button
-            type="primary"
-            block
+  
+            <Button
+              type="primary"
+              block
               style={{ marginTop: 16 }}
-            onClick={handleCheckout}
+              onClick={handleCheckout}
               disabled={cartItems.length === 0 || !selectedPaymentMethod || (!selectedDeliveryId && !isNewDeliveryDetails)}
-          >
-              {selectedPaymentMethod === 'bank_slip' ? 'Continue to Bank Slip Upload' : 
-               selectedPaymentMethod === 'cash' ? 'Place Order' : 
-               'Proceed to Payment'}
-          </Button>
+            >
+              {selectedPaymentMethod === 'cash' ? 'Place Order' : 'Proceed to Payment'}
+            </Button>
           </Card>
         </Col>
       </Row>
-
-      <Modal
-        title="Upload Bank Slip"
-        open={isBankSlipModalVisible}
-        onCancel={() => setIsBankSlipModalVisible(false)}
-        footer={null}
-      >
-        <Form
-          form={bankSlipForm}
-          layout="vertical"
-          onFinish={handleBankSlipUpload}
-        >
-          <Form.Item
-            name="slipImage"
-            label="Bank Slip Image"
-            valuePropName="fileList"
-            getValueFromEvent={(e) => {
-              if (Array.isArray(e)) {
-                return e;
-              }
-              return e?.fileList;
-            }}
-            rules={[
-              { required: true, message: 'Please upload bank slip image' },
-              {
-                validator: (_, value) => {
-                  if (value && value.length > 0) {
-                    const file = value[0];
-                    const isImage = file.type.startsWith('image/');
-                    if (!isImage) {
-                      return Promise.reject('You can only upload image files!');
-                    }
-                    const isLt2M = file.size / 1024 / 1024 < 2;
-                    if (!isLt2M) {
-                      return Promise.reject('Image must be smaller than 2MB!');
-                    }
-                  }
-                  return Promise.resolve();
-                },
-              },
-            ]}
-          >
-            <Upload
-              name="slipImage"
-              listType="picture-card"
-              maxCount={1}
-              beforeUpload={() => false}
-            >
-              <div>
-                <UploadOutlined />
-                <div style={{ marginTop: 8 }}>Upload</div>
-              </div>
-            </Upload>
-          </Form.Item>
-
-          <Form.Item>
-            <Button type="primary" htmlType="submit" block>
-              Submit Bank Slip
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
     </div>
+
+  
   );
-}
+} 

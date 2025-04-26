@@ -1,34 +1,37 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Table, Card, Typography, Button, message, Space } from 'antd';
-import { EyeOutlined, DownloadOutlined, FilePdfOutlined } from '@ant-design/icons';
+import { Table, Card, Typography, Button, message, Space, Tag, Descriptions, Spin, Popconfirm } from 'antd';
+import { EyeOutlined, DownloadOutlined, FilePdfOutlined, ShoppingCartOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import jsPDF from "jspdf";
 import autoTable from 'jspdf-autotable';
+import axios from 'axios';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 export default function OrderPage() {
   const currentUser = useSelector((state) => state.user.currentUser);
   const userId = currentUser?._id;
   const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (userId) {
       const fetchOrders = async () => {
         try {
-          const response = await fetch(`/api/order/user-orders/${userId}`);
-          const data = await response.json();
-          console.log('Orders data:', data);
-          if (data.success) {
-            setOrders(data.data);
+          const response = await axios.get(`http://localhost:3000/api/order/user/${userId}`);
+          console.log('Orders response:', response.data);
+          if (response.data.success) {
+            setOrders(response.data.data);
           } else {
-            message.error(data.message || 'Failed to fetch orders');
+            message.error(response.data.message || 'Failed to fetch orders');
           }
         } catch (error) {
-          console.error('Error:', error);
+          console.error('Error fetching orders:', error);
           message.error('Failed to fetch orders');
+        } finally {
+          setLoading(false);
         }
       };
       fetchOrders();
@@ -43,14 +46,206 @@ export default function OrderPage() {
     navigate(`/trackOrder/${orderId}`);
   };
 
-  const handleQuantityChange = (value, record, type) => {
-    const updatedOrders = [...orders];
-    if (type === 'item') {
-      const orderIndex = updatedOrders.findIndex(order => order.orderId === record.orderId);
-      const itemIndex = updatedOrders[orderIndex].items.findIndex(item => item._id === record._id);
-      updatedOrders[orderIndex].items[itemIndex].quantity = value;
+  const getStatusColor = (status) => {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return 'success';
+      case 'pending':
+        return 'warning';
+      case 'processing':
+        return 'processing';
+      case 'cancelled':
+        return 'error';
+      default:
+        return 'default';
     }
-    setOrders(updatedOrders);
+  };
+
+  const getPaymentStatusColor = (status) => {
+    switch (status.toLowerCase()) {
+      case 'paid':
+        return 'success';
+      case 'pending':
+        return 'warning';
+      case 'failed':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
+  const handleDelete = async (orderId) => {
+    try {
+      setLoading(true);
+      const response = await axios.delete(`http://localhost:3000/api/order/${orderId}`);
+      if (response.data.success) {
+        message.success('Order deleted successfully');
+        // Update the orders list by filtering out the deleted order
+        setOrders(orders.filter(order => order.orderId !== orderId));
+      } else {
+        message.error(response.data.message || 'Failed to delete order');
+      }
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      message.error('Failed to delete order');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.delete(`http://localhost:3000/api/order/user/${userId}/all`);
+      if (response.data.success) {
+        message.success(response.data.message);
+        setOrders([]); // Clear all orders from the state
+      } else {
+        message.error(response.data.message || 'Failed to delete all orders');
+      }
+    } catch (error) {
+      console.error('Error deleting all orders:', error);
+      message.error('Failed to delete all orders');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const columns = [
+    {
+      title: 'Order ID',
+      dataIndex: 'orderId',
+      key: 'orderId',
+      render: (text) => <span style={{ fontFamily: 'monospace' }}>{text}</span>,
+    },
+    {
+      title: 'Date',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (date) => new Date(date).toLocaleDateString(),
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status) => (
+        <Tag color={status.toLowerCase() === 'pending' ? 'gold' : 'green'}>
+          {status}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Total',
+      dataIndex: 'totalAmount',
+      key: 'total',
+      render: (amount) => `Rs ${amount.toFixed(2)}`,
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <Space>
+          <Button
+            type="primary"
+            icon={<DownloadOutlined />}
+            onClick={() => downloadOrderPDF(record)}
+          >
+            Download PDF
+          </Button>
+          <Button
+            type="primary"
+            icon={<EyeOutlined />}
+            onClick={() => handleTrackOrderClick(record.orderId)}
+          >
+            Track Order
+          </Button>
+          <Popconfirm
+            title="Delete Order"
+            description="Are you sure you want to delete this order?"
+            onConfirm={() => handleDelete(record.orderId)}
+            okText="Yes"
+            cancelText="No"
+            okButtonProps={{ danger: true }}
+          >
+            <Button
+              type="primary"
+              danger
+              icon={<DeleteOutlined />}
+            >
+              Delete
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
+  const itemColumns = [
+    {
+      title: 'Item',
+      dataIndex: 'name',
+      key: 'name',
+      render: (text, record) => (
+        <Space>
+          <ShoppingCartOutlined />
+          <span>{text}</span>
+        </Space>
+      ),
+    },
+    {
+      title: 'Unit Price',
+      dataIndex: 'price',
+      key: 'price',
+      render: (price) => `Rs ${Number(price).toFixed(2)}`,
+    },
+    {
+      title: 'Quantity',
+      dataIndex: 'quantity',
+      key: 'quantity',
+    },
+    {
+      title: 'Subtotal',
+      key: 'subtotal',
+      render: (_, record) => `Rs ${(record.price * record.quantity).toFixed(2)}`,
+    },
+  ];
+
+  const expandedRowRender = (record) => {
+    return (
+      <Card>
+        <Descriptions title="Order Details" bordered column={2}>
+          <Descriptions.Item label="Order ID">{record.orderId}</Descriptions.Item>
+          <Descriptions.Item label="Date">{new Date(record.createdAt).toLocaleString()}</Descriptions.Item>
+          <Descriptions.Item label="Status">
+            <Tag color={getStatusColor(record.status)}>{record.status.toUpperCase()}</Tag>
+          </Descriptions.Item>
+          <Descriptions.Item label="Payment Status">
+            <Tag color={getPaymentStatusColor(record.paymentStatus)}>{record.paymentStatus.toUpperCase()}</Tag>
+          </Descriptions.Item>
+          <Descriptions.Item label="Payment Method">{record.paymentMethod || 'N/A'}</Descriptions.Item>
+          <Descriptions.Item label="Total Amount">Rs {calculateOrderTotal(record.items)}</Descriptions.Item>
+        </Descriptions>
+
+        <Title level={5} style={{ marginTop: 20, marginBottom: 16 }}>Order Items</Title>
+        <Table
+          dataSource={record.items}
+          columns={itemColumns}
+          pagination={false}
+          rowKey={(item) => `${record.orderId}-${item.name}`}
+          summary={(pageData) => {
+            const total = pageData.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            return (
+              <Table.Summary.Row>
+                <Table.Summary.Cell index={0} colSpan={3}>Total</Table.Summary.Cell>
+                <Table.Summary.Cell index={1}>
+                  <Text strong>Rs {total.toFixed(2)}</Text>
+                </Table.Summary.Cell>
+              </Table.Summary.Row>
+            );
+          }}
+        />
+      </Card>
+    );
   };
 
   const downloadOrderPDF = (order) => {
@@ -253,151 +448,73 @@ export default function OrderPage() {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'completed':
-        return 'green';
-      case 'pending':
-        return 'orange';
-      case 'processing':
-        return 'blue';
-      case 'cancelled':
-        return 'red';
-      default:
-        return 'gray';
-    }
-  };
-
-  const columns = [
-    {
-      title: 'Order ID',
-      dataIndex: 'orderId',
-      key: 'orderId',
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => (
-        <span style={{ color: getStatusColor(status) }}>
-          {status.charAt(0).toUpperCase() + status.slice(1)}
-        </span>
-      ),
-    },
-    {
-      title: 'Payment Status',
-      dataIndex: 'paymentStatus',
-      key: 'paymentStatus',
-      render: (status) => (
-        <span style={{ color: status === 'paid' ? 'green' : 'orange' }}>
-          {status.charAt(0).toUpperCase() + status.slice(1)}
-        </span>
-      ),
-    },
-    {
-      title: 'Total Price',
-      key: 'totalPrice',
-      render: (text, record) => `Rs ${calculateOrderTotal(record.items)}`,
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (text, record) => (
-        <>
-          <Button
-            type="primary"
-            icon={<EyeOutlined />}
-            onClick={() => handleTrackOrderClick(record.orderId)}
-            style={{ marginRight: 8 }}
-          >
-            Track
-          </Button>
-          <Button
-            type="default"
-            icon={<DownloadOutlined />}
-            onClick={() => {
-              console.log('Download button clicked for order:', record);
-              downloadOrderPDF(record);
-            }}
-          >
-            PDF
-          </Button>
-        </>
-      ),
-    },
-  ];
-
-  const itemColumns = [
-    {
-      title: 'Item Name',
-      dataIndex: 'name',
-      key: 'name',
-    },
-    {
-      title: 'Unit Price',
-      dataIndex: 'price',
-      key: 'price',
-      render: (text) => `Rs ${text.toFixed(2)}`,
-    },
-    {
-      title: 'Quantity',
-      dataIndex: 'quantity',
-      key: 'quantity',
-    },
-    {
-      title: 'Total Price',
-      key: 'totalPrice',
-      render: (text, record) => `Rs ${(record.price * record.quantity).toFixed(2)}`,
-    },
-  ];
-
   return (
     <div style={{ padding: '20px', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
-      <Card 
-        title={
+      <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <Button 
+          onClick={() => navigate('/')}
+          style={{ display: 'flex', alignItems: 'center' }}
+        >
+          ← Back to Home
+        </Button>
+        <Title level={4} style={{ margin: 0 }}>My Orders</Title>
+        {orders.length > 0 && (
           <Space>
-            <span>My Orders - {orders.length} orders</span>
-            {orders.length > 0 && (
+            <Button
+              type="primary"
+              icon={<DownloadOutlined />}
+              onClick={downloadAllOrdersPDF}
+            >
+              Download All Orders
+            </Button>
+            <Popconfirm
+              title="Delete All Orders"
+              description="Are you sure you want to delete all your orders? This action cannot be undone."
+              onConfirm={handleDeleteAll}
+              okText="Yes"
+              cancelText="No"
+              okButtonProps={{ danger: true }}
+            >
               <Button
                 type="primary"
-                icon={<FilePdfOutlined />}
-                onClick={downloadAllOrdersPDF}
+                danger
+                icon={<DeleteOutlined />}
               >
-                Download All Orders
+                Delete All Orders
               </Button>
-            )}
+            </Popconfirm>
           </Space>
-        } 
-        style={{ marginBottom: 20 }}
-      >
-        {orders.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '20px' }}>
-            <Title level={4}>No Completed Orders Found</Title>
-            <p>You haven't completed any orders yet. Your completed orders will appear here after successful payment.</p>
-            <Button type="primary" onClick={() => navigate('/cart')}>
-              Go to Cart
-            </Button>
-          </div>
-        ) : (
+        )}
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          <Spin size="large" />
+          <p>Loading your orders...</p>
+        </div>
+      ) : orders.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          <Title level={4}>No Orders Found</Title>
+          <p>You haven't placed any orders yet.</p>
+          <Button type="primary" onClick={() => navigate('/products')}>
+            Start Shopping
+          </Button>
+        </div>
+      ) : (
         <Table
           dataSource={orders}
           columns={columns}
-          rowKey="orderId"
           expandable={{
-            expandedRowRender: (record) => (
-              <Table
-                dataSource={record.items}
-                columns={itemColumns}
-                pagination={false}
-                rowKey="_id"
-              />
-            ),
-            rowExpandable: (record) => record.items.length > 0,
+            expandedRowRender,
+            expandRowByClick: true,
           }}
-          pagination={false}
+          rowKey="orderId"
+          pagination={{
+            pageSize: 10,
+            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} orders`,
+          }}
         />
-        )}
-      </Card>
+      )}
     </div>
   );
 }

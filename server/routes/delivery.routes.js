@@ -2,13 +2,16 @@ import express from 'express';
 import {
   saveDeliveryDetails,
   getDeliveryDetails,
-  deleteDeliveryDetails
+  deleteDeliveryDetails,
+  getDeliveryDetailById
 } from '../controllers/delivery.controller.js';
 
 const router = express.Router();
 
-router.post('/saveDeliveryDetails', saveDeliveryDetails);
-router.get('/:userId', getDeliveryDetails);
+// More specific routes first
+router.get('/detail/:id', getDeliveryDetailById);
 router.delete('/:id', deleteDeliveryDetails);
+router.get('/user/:userId', getDeliveryDetails);
+router.post('/saveDeliveryDetails', saveDeliveryDetails);
 
-export default router; 
+export default router;

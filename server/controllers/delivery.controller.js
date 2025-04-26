@@ -72,4 +72,31 @@ export const deleteDeliveryDetails = async (req, res) => {
       error: error.message
     });
   }
-}; 
+};
+
+// Get a single delivery detail by ID
+export const getDeliveryDetailById = async (req, res) => {
+  try {
+    const deliveryDetail = await DeliveryDetails.findById(req.params.id);
+    
+    if (!deliveryDetail) {
+      return res.status(404).json({
+        success: false,
+        message: "Delivery detail not found"
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: "Delivery detail retrieved successfully",
+      data: deliveryDetail
+    });
+  } catch (error) {
+    console.error("Error fetching delivery detail:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching delivery detail",
+      error: error.message
+    });
+  }
+};

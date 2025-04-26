@@ -5,8 +5,7 @@ const deliverySchema = new mongoose.Schema(
     userId: { 
       type: mongoose.Schema.Types.ObjectId, 
       required: true,
-      ref: 'User', // Reference to User model
-      index: true
+      ref: 'User' // Reference to User model
     },
     customerName: { type: String, required: true },
     mobileNumber: { type: String, required: true },

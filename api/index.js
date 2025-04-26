@@ -13,6 +13,7 @@ import paymentRoutes from './routes/payment.route.js';
 import orderRoutes from './routes/order.route.js';
 import feedbackRoutes from './routes/feedback.route.js';
 import deliveryRoutes from './routes/delivery.routes.js';
+import emailRoutes from './routes/email.routes.js';
 import admin from './config/firebase.js';
 import { stripeRawBodyMiddleware } from './middleware/stripeRawBoady.js';
 import inventoryRoutes from './routes/inventory.route.js';
@@ -77,6 +78,7 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/order', orderRoutes);
 app.use('/api/delivery', deliveryRoutes);
+app.use('/api/email', emailRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/bankslip', bankSlipRoutes); // Add Bank Slip Routes here

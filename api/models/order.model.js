@@ -31,7 +31,14 @@ const orderSchema = new mongoose.Schema({
   ],
   paymentStatus: { 
     type: String, 
-    required: true 
+    required: true,
+    enum: ['pending', 'awaiting_payment', 'paid', 'failed'],
+    default: 'pending'
+  },
+  paymentMethod: {
+    type: String,
+    required: true,
+    enum: ['cash', 'stripe', 'bank_slip']
   },
   paymentIntentId: { 
     type: String 
@@ -42,7 +49,8 @@ const orderSchema = new mongoose.Schema({
   },
   status: { 
     type: String, 
-    default: 'pending' 
+    default: 'pending',
+    enum: ['pending', 'processing', 'completed', 'cancelled']
   },
   createdAt: { 
     type: Date, 

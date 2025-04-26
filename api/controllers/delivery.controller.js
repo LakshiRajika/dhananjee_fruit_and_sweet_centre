@@ -319,3 +319,23 @@ export const deleteDeliveryDetails = async (req, res) => {
     });
   }
 };
+
+export const updateDeliveryDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedDelivery = await Delivery.findByIdAndUpdate(
+      id,
+      { $set: req.body },
+      { new: true }
+    );
+
+    if (!updatedDelivery) {
+      return res.status(404).json({ success: false, message: 'Delivery details not found' });
+    }
+
+    res.status(200).json({ success: true, data: updatedDelivery });
+  } catch (error) {
+    console.error('Error updating delivery details:', error);
+    res.status(500).json({ success: false, message: 'Failed to update delivery details' });
+  }
+};

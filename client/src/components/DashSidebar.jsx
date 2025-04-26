@@ -147,7 +147,7 @@ export default function DashSidebar() {
                 icon={FaBoxOpen}
                 label="Inventory"
                 className={`hover:bg-gray-200 ${
-                  tab === "addProduct" ? "bg-gray-300" : ""
+                  tab === "addProduct" || tab === "productList" ? "bg-gray-300" : ""
                 }`}
               >
                 <Link to="/dashboard?tab=addProduct">
@@ -175,6 +175,39 @@ export default function DashSidebar() {
                 </Link>
               </Sidebar.Collapse>
 
+              {/* Orders Section */}
+              <Sidebar.Collapse
+                icon={HiShoppingCart}
+                label="Orders"
+                className={`hover:bg-gray-200 ${
+                  tab === "orders" || tab === "all-orders" ? "bg-gray-300" : ""
+                }`}
+              >
+                <Link to="/dashboard?tab=orders">
+                  <Sidebar.Item
+                    className={`hover:bg-gray-200 ${
+                      tab === "orders" ? "bg-gray-300" : ""
+                    }`}
+                    icon={HiShoppingCart}
+                    as="div"
+                  >
+                    Get All Orders
+                  </Sidebar.Item>
+                </Link>
+
+                <Link to="/dashboard?tab=all-orders">
+                  <Sidebar.Item
+                    className={`hover:bg-gray-200 ${
+                      tab === "all-orders" ? "bg-gray-300" : ""
+                    }`}
+                    icon={HiShoppingCart}
+                    as="div"
+                  >
+                    Order Summary
+                  </Sidebar.Item>
+                </Link>
+              </Sidebar.Collapse>
+
               <Link to="/dashboard?tab=comments">
                 <Sidebar.Item
                   className={`hover:bg-gray-200 ${
@@ -196,18 +229,6 @@ export default function DashSidebar() {
                   as="div"
                 >
                   Deliveries
-                </Sidebar.Item>
-              </Link>
-
-              <Link to="/dashboard?tab=orders">
-                <Sidebar.Item
-                  className={`hover:bg-gray-200 ${
-                    tab === "orders" ? "bg-gray-300" : ""
-                  }`}
-                  icon={HiShoppingCart}
-                  as="div"
-                >
-                  Orders
                 </Sidebar.Item>
               </Link>
             </>

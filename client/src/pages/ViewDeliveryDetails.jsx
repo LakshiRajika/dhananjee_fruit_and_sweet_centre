@@ -63,16 +63,19 @@ const ViewDeliveryDetails = () => {
         },
         body: JSON.stringify(formData),
       });
+      
+      const result = await response.json();
+      
       if (response.ok) {
-        const updatedDelivery = await response.json();
-        setDeliveryDetails(updatedDelivery.data); // Update the displayed delivery details
-        setSuccessMessage("Delivery details updated successfully!"); // Display success message
-        setIsEditing(false); // Exit edit mode
+        setDeliveryDetails(result.data); // Update the displayed delivery details
+        setSuccessMessage("Delivery details updated successfully!");
+        setIsEditing(false);
       } else {
-        setError("Failed to update delivery details.");
+        setError(result.message || "Failed to update delivery details.");
       }
     } catch (error) {
-      setError("Error updating delivery details.");
+      console.error("Error updating delivery details:", error);
+      setError("Error updating delivery details. Please try again.");
     }
   };
 
@@ -81,14 +84,18 @@ const ViewDeliveryDetails = () => {
       const response = await fetch(`http://localhost:3000/api/delivery/${id}`, {
         method: "DELETE",
       });
+      
+      const result = await response.json();
+      
       if (response.ok) {
-        alert("Delivery deleted successfully!");
-        navigate("/deliveries"); // Navigate to the deliveries list after successful deletion
+        setSuccessMessage("Delivery deleted successfully!");
+        navigate("/deliveries");
       } else {
-        alert("Error deleting delivery.");
+        setError(result.message || "Failed to delete delivery.");
       }
     } catch (error) {
-      alert("Error occurred while deleting the delivery.");
+      console.error("Error deleting delivery:", error);
+      setError("Error deleting delivery. Please try again.");
     }
   };
 
