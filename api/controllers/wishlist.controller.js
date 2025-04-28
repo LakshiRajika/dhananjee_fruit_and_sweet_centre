@@ -26,41 +26,51 @@ export const addToWishlist = async (req, res) => {
       });
     }
 
-    // Convert userId and productId to ObjectId
-    const userObjectId = new mongoose.Types.ObjectId(userId);
-    const productObjectId = new mongoose.Types.ObjectId(productId);
+    try {
+      // Convert userId to ObjectId
+      const userObjectId = new mongoose.Types.ObjectId(userId);
+      
+      console.log('Converted user ID:', userObjectId);
 
-    // Check if item already exists in wishlist
-    const existingItem = await Wishlist.findOne({ userId: userObjectId, productId: productObjectId });
-    if (existingItem) {
-      console.log('Item already exists in wishlist:', existingItem);
+      // Check if item already exists in wishlist
+      const existingItem = await Wishlist.findOne({ userId: userObjectId, productId: productId });
+      if (existingItem) {
+        console.log('Item already exists in wishlist:', existingItem);
+        return res.status(400).json({
+          success: false,
+          message: 'Item already in wishlist'
+        });
+      }
+
+      // Create new wishlist item
+      const wishlistItem = new Wishlist({
+        userId: userObjectId,
+        productId: productId, // Keep as string, don't convert to ObjectId
+        name: name.toString(),
+        price: Number(price),
+        image: image.toString(),
+        description: description?.toString() || '',
+        category: category?.toString() || ''
+      });
+
+      console.log('Saving wishlist item:', wishlistItem);
+
+      const savedItem = await wishlistItem.save();
+      console.log('Item saved to wishlist:', savedItem);
+
+      res.status(201).json({
+        success: true,
+        message: 'Item added to wishlist successfully',
+        data: savedItem
+      });
+    } catch (idError) {
+      console.error('Error with ID conversion:', idError);
       return res.status(400).json({
         success: false,
-        message: 'Item already in wishlist'
+        message: 'Invalid user ID format',
+        error: idError.message
       });
     }
-
-    // Create new wishlist item
-    const wishlistItem = new Wishlist({
-      userId: userObjectId,
-      productId: productObjectId,
-      name: name.toString(),
-      price: Number(price),
-      image: image.toString(),
-      description: description?.toString() || '',
-      category: category?.toString() || ''
-    });
-
-    console.log('Saving wishlist item:', wishlistItem);
-
-    const savedItem = await wishlistItem.save();
-    console.log('Item saved to wishlist:', savedItem);
-
-    res.status(201).json({
-      success: true,
-      message: 'Item added to wishlist successfully',
-      data: savedItem
-    });
   } catch (error) {
     console.error('Error adding to wishlist:', error);
     
@@ -147,7 +157,9 @@ export const removeFromWishlist = async (req, res) => {
     // Convert userId to ObjectId
     const userObjectId = new mongoose.Types.ObjectId(userId);
 
-    const deletedItem = await Wishlist.findOneAndDelete({ _id: itemId, userId: userObjectId });
+    console.log('Looking for wishlist item with:', { userId: userObjectId, productId: itemId });
+    const deletedItem = await Wishlist.findOneAndDelete({ userId: userObjectId, productId: itemId });
+    console.log('Deleted item:', deletedItem);
 
     if (!deletedItem) {
       return res.status(404).json({

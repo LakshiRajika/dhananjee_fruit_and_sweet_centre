@@ -8,6 +8,7 @@ import styles from '../Style.module.css';
 import DeliveryDetailsList from '../components/DeliveryDetailsList';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
+import ChatbotWidget from '../components/ChatbotWidget';
 
 const { Panel } = Collapse;
 const { Title, Text } = Typography;
@@ -305,11 +306,12 @@ export default function CartPage() {
         items: cartItems.map(item => ({
           itemId: item.itemId,
           name: item.name,
-          price: item.price,
+          price: parseFloat(item.price),
           quantity: item.quantity,
-          image: item.image
+          image: item.image,
+          userId: currentUser._id
         })),
-        totalAmount: totalAmount,
+        totalAmount: parseFloat(totalAmount),
         userDeliveryDetailsId: deliveryId,
         orderId: `ORD-${Date.now()}`,
         paymentMethod: selectedPaymentMethod,
@@ -725,8 +727,12 @@ export default function CartPage() {
           </Card>
         </Col>
       </Row>
+      
+      {/* Add Chatbot Widget */}
+      <ChatbotWidget />
     </div>
-
-  
   );
-} 
+
+
+}
+  

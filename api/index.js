@@ -18,7 +18,8 @@ import admin from './config/firebase.js';
 import { stripeRawBodyMiddleware } from './middleware/stripeRawBoady.js';
 import inventoryRoutes from './routes/inventory.route.js';
 import wishlistRoutes from './routes/wishlist.route.js';
-import bankSlipRoutes from './routes/bankSlip.route.js';
+import chatbotRoutes from './routes/chatbot.route.js';
+import refundRouter from './routes/refund.route.js';
 
 dotenv.config();
 
@@ -66,7 +67,6 @@ app.use((err, req, res, next) => {
 const __dirname = path.dirname(new URL(import.meta.url).pathname); // Get current directory
 app.use('/uploads', express.static('uploads'));
 app.use('/uploads/orders', express.static(path.join(__dirname, 'uploads', 'orders')));
-app.use('/uploads/bank-slips', express.static(path.join(__dirname, 'uploads', 'bank-slips')));
 
 // ✅ Stripe Webhook Middleware
 app.use('/api/payment/webhook', stripeRawBodyMiddleware);
@@ -81,8 +81,9 @@ app.use('/api/delivery', deliveryRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/wishlist', wishlistRoutes);
-app.use('/api/bankslip', bankSlipRoutes); // Add Bank Slip Routes here
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/refund', refundRouter);
 
 app.use((err, req, res, next) => {
   console.error('Error:', err);

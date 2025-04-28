@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Card, Col, Row, Button, Tabs, Spin, Modal } from "antd";
+import { Card, Col, Row, Button, Tabs, Spin, Modal, message } from "antd";
 import { AiOutlineShoppingCart } from "react-icons/ai";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
-import { HeartOutlined, HeartFilled, ShoppingCartOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { HeartOutlined, HeartFilled, ShoppingCartOutlined, CheckCircleOutlined, ShoppingOutlined } from '@ant-design/icons';
 import axios from "axios";
 
 const { TabPane } = Tabs;
@@ -22,6 +22,9 @@ const Products = () => {
   const [wishlistModalVisible, setWishlistModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [modalIcon, setModalIcon] = useState(null);
+  // New state for already in cart modal
+  const [alreadyInCartModalVisible, setAlreadyInCartModalVisible] = useState(false);
+  const [alreadyInCartMessage, setAlreadyInCartMessage] = useState('');
 
   // Function to show success modal
   const showSuccessModal = (message, icon) => {
@@ -150,36 +153,19 @@ const Products = () => {
         }
       });
 
+      // Add more detailed debugging
+      console.log('Error response data:', error.response?.data);
+      console.log('Error message:', error.response?.data?.message);
+      console.log('Is message match?', error.response?.data?.message === "This item is already in your cart");
+      console.log('Does message include "already in your cart"?', 
+        error.response?.data?.message?.includes("already in your cart"));
+
       if (error.response?.status === 400) {
-        if (error.response?.data?.message === "This item is already in your cart") {
-          Modal.info({
-            title: 'Item Already in Cart',
-            content: (
-              <div>
-                <p>{product.name} is already in your cart.</p>
-                <p>Would you like to:</p>
-                <div style={{ marginTop: '10px' }}>
-                  <Button 
-                    type="primary" 
-                    onClick={() => {
-                      window.location.href = '/cart';
-                    }}
-                    style={{ marginRight: '10px' }}
-                  >
-                    Go to Cart
-                  </Button>
-                  <Button 
-                    onClick={() => Modal.destroyAll()}
-                  >
-                    Continue Shopping
-                  </Button>
-                </div>
-              </div>
-            ),
-            centered: true,
-            maskClosable: true
-          });
+        if (error.response?.data?.message?.includes("already in your cart")) {
+          setAlreadyInCartMessage(`${product.name} is already in your cart!`);
+          setAlreadyInCartModalVisible(true);
         } else {
+          console.log('Showing generic error modal for 400 status');
           Modal.error({
             title: 'Error',
             content: error.response?.data?.message || "An error occurred while adding to cart",
@@ -187,6 +173,7 @@ const Products = () => {
           });
         }
       } else {
+        console.log('Showing generic error modal for non-400 status');
         Modal.error({
           title: 'Error',
           content: "An unexpected error occurred. Please try again.",
@@ -207,15 +194,41 @@ const Products = () => {
         return;
       }
 
+      // Check if item is already in wishlist
+      const isAlreadyInWishlist = isInWishlist(product.product_ID);
+      console.log('Is already in wishlist:', isAlreadyInWishlist);
+      
+      if (isAlreadyInWishlist) {
+        // If already in wishlist, remove it
+        try {
+          console.log('Removing from wishlist:', { userId, productId: product.product_ID });
+          const response = await axios.delete(`${SERVER_URL}/api/wishlist/${userId}/${product.product_ID}`);
+          console.log('Remove response:', response.data);
+          
+          if (response.data.success) {
+            message.success('Item removed from wishlist');
+            // Update local wishlist state
+            setWishlistItems(prevItems => prevItems.filter(item => item.productId !== product.product_ID));
+          }
+        } catch (error) {
+          console.error('Error removing from wishlist:', error);
+          message.error('Failed to remove item from wishlist');
+        }
+        return;
+      }
+
+      // If not in wishlist, add it
       const wishlistItem = {
         userId: userId,
-        productId: product._id,
+        productId: product.product_ID,
         name: product.name,
         price: product.price,
         image: product.image,
         description: product.description,
         category: product.category
       };
+
+      console.log('Adding to wishlist:', wishlistItem);
 
       const response = await axios.post(`${SERVER_URL}/api/wishlist/add`, wishlistItem, {
         headers: {
@@ -238,15 +251,25 @@ const Products = () => {
       }
     } catch (error) {
       console.error('Error adding to wishlist:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
+      // Display the specific error message from the server if available
+      const errorMessage = error.response?.data?.message || 'Failed to add to wishlist. Please try again.';
       Modal.error({
         title: 'Error',
-        content: error.response?.data?.message || 'Failed to add to wishlist. Please try again.',
+        content: errorMessage,
         centered: true
       });
     }
   };
 
   const isInWishlist = (productId) => {
+    console.log('Checking if product is in wishlist:', productId);
+    console.log('Current wishlist items:', wishlistItems);
     return wishlistItems.some(item => item.productId === productId);
   };
 
@@ -295,6 +318,45 @@ const Products = () => {
             <p>{modalMessage}</p>
           </Modal>
 
+          {/* Custom Modal for Already in Cart */}
+          <Modal
+            open={alreadyInCartModalVisible}
+            footer={null}
+            closable={false}
+            centered
+            onCancel={() => setAlreadyInCartModalVisible(false)}
+            styles={{
+              mask: { backgroundColor: 'rgba(0, 0, 0, 0.5)' },
+              body: { 
+                padding: '30px',
+                textAlign: 'center'
+              }
+            }}
+          >
+            <div style={{ fontSize: '60px', color: '#52c41a', marginBottom: '20px' }}>
+              <ShoppingCartOutlined />
+            </div>
+            <h3 style={{ color: '#52c41a', marginBottom: '10px' }}>Already in Cart!</h3>
+            <p>{alreadyInCartMessage}</p>
+            <div style={{ marginTop: 24 }}>
+              <Button
+                type="primary"
+                style={{ marginRight: 12 }}
+                onClick={() => {
+                  setAlreadyInCartModalVisible(false);
+                  window.location.href = '/cart';
+                }}
+              >
+                Go to Cart
+              </Button>
+              <Button
+                onClick={() => setAlreadyInCartModalVisible(false)}
+              >
+                Continue Shopping
+              </Button>
+            </div>
+          </Modal>
+
           {/* Success Modal for Wishlist */}
           <Modal
             open={wishlistModalVisible}
@@ -325,42 +387,47 @@ const Products = () => {
 const ProductGrid = ({ products, addToCart, addToWishlist, isInWishlist }) => (
   <Row gutter={[16, 16]}>
     {products.length > 0 ? (
-      products.map((product, index) => (
-        <Col span={8} key={index}>
-          <Card
-            hoverable
-            cover={
-              <img 
-                alt={product.name} 
-                src={`${SERVER_URL}${product.image}`}
-                style={{ width: "100%", height: "200px", objectFit: "cover" }} 
-                onError={(e) => { e.target.src = "/default-placeholder.png"; }}
-              />
-            }
-            actions={[
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: 10 }}>
-                <span style={{ color: "green", fontWeight: "bold", fontSize: "20px" }}>Rs {product.price}</span>
-                <Button
-                  type="text"
-                  icon={isInWishlist(product._id) ? <HeartFilled style={{ color: 'red' }} /> : <HeartOutlined />}
-                  onClick={() => addToWishlist(product)}
-                >
-                  {isInWishlist(product._id) ? 'In Wishlist' : 'Add to Wishlist'}
-                </Button>
-                <Button
-                  type="text"
-                  icon={<AiOutlineShoppingCart />}
-                  onClick={() => addToCart(product)}
-                >
-                  Add to Cart
-                </Button>
-              </div>,
-            ]}
-          >
-            <Card.Meta title={product.name} description={product.description} />
-          </Card>
-        </Col>
-      ))
+      products.map((product, index) => {
+        const inWishlist = isInWishlist(product.product_ID);
+        console.log(`Product ${product.name} (${product.product_ID}) in wishlist:`, inWishlist);
+        
+        return (
+          <Col span={8} key={index}>
+            <Card
+              hoverable
+              cover={
+                <img 
+                  alt={product.name} 
+                  src={`${SERVER_URL}${product.image}`}
+                  style={{ width: "100%", height: "200px", objectFit: "cover" }} 
+                  onError={(e) => { e.target.src = "/default-placeholder.png"; }}
+                />
+              }
+              actions={[
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: 10 }}>
+                  <span style={{ color: "green", fontWeight: "bold", fontSize: "20px" }}>Rs {product.price}</span>
+                  <Button
+                    type="text"
+                    icon={inWishlist ? <HeartFilled style={{ color: 'red' }} /> : <HeartOutlined />}
+                    onClick={() => addToWishlist(product)}
+                  >
+                    {inWishlist ? 'In Wishlist' : 'Add to Wishlist'}
+                  </Button>
+                  <Button
+                    type="text"
+                    icon={<AiOutlineShoppingCart />}
+                    onClick={() => addToCart(product)}
+                  >
+                    Add to Cart
+                  </Button>
+                </div>,
+              ]}
+            >
+              <Card.Meta title={product.name} description={product.description} />
+            </Card>
+          </Col>
+        );
+      })
     ) : (
       <p>No products found.</p>
     )}

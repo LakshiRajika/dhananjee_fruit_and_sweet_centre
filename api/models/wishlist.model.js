@@ -7,7 +7,7 @@ const wishlistSchema = new mongoose.Schema({
     ref: 'User'
   },
   productId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     required: true
   },
   name: {
@@ -55,4 +55,4 @@ wishlistSchema.post('findOne', function(doc) {
   console.log('Found wishlist item:', doc);
 });
 
-export default mongoose.model('Wishlist', wishlistSchema); 
+export default mongoose.model('Wishlist', wishlistSchema);

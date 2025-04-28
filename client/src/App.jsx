@@ -18,7 +18,6 @@ import FeedbackForm from "./pages/feedbackForm";
 import TrackOrderPage from "./pages/TrackOrderPage";
 import PaymentFailed from "./pages/PaymentFailed";
 import DeliveryDetails from "./pages/DeliveryDetails";
-import BankSlipUpload from "./pages/BankSlipUpload"; // ✅ Corrected path
 import CreatePost from "./pages/CreatePost"; // ✅ Add this line
 import Orders from './pages/Orders';
 import Wishlist from './pages/Wishlist';
@@ -60,7 +59,6 @@ export default function App() {
         <Route path="/myOrders" element={<OrderPage />} />
         <Route path="/trackOrder/:orderId" element={<TrackOrderPage />} />
         <Route path="/orders/deliveryDetails" element={<DeliveryDetails />} />
-        <Route path="/bankslip-upload" element={<BankSlipUpload />} />{" "}
         {/* New Bank Slip Upload route */}
         <Route path="/orders" element={<Orders />} />
         <Route path="/wishlist" element={<Wishlist />} />

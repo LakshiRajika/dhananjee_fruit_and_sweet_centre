@@ -149,13 +149,13 @@ export default function AllOrders() {
   };
 
   const generatePDF = async () => {
-    const doc = new jsPDF();
+      const doc = new jsPDF();
     const margin = 10;
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(12);
+      doc.setFontSize(12);
 
     doc.text(`Total Orders: ${stats.totalOrders}`, pageWidth / 2, 20, { align: 'center' });
     doc.text(`Pending Orders: ${stats.pendingOrders}`, pageWidth / 2, 30, { align: 'center' });
@@ -183,7 +183,7 @@ export default function AllOrders() {
         yOffset += imgHeight + 10;
 
         if (i + chartsPerPage < numberOfCharts) {
-          doc.addPage();
+        doc.addPage();
         }
       }
     }
@@ -299,7 +299,7 @@ export default function AllOrders() {
       </body>
       </html>
     `;
-  
+
     const blob = new Blob([htmlContent], { type: 'text/html' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -311,8 +311,8 @@ export default function AllOrders() {
     <div className="p-4">
       <div className="mb-4 flex justify-between items-center">
         <h1 className="text-2xl font-bold">Order Management</h1>
-        <div className="flex gap-2">
-          <Button 
+          <div className="flex gap-2">
+            <Button 
             onClick={generatePDF} 
             style={{ 
               backgroundColor: '#1890ff', 
@@ -321,8 +321,8 @@ export default function AllOrders() {
             }}
           >
             <HiDownload className="mr-2" /> Generate PDF
-          </Button>
-          <Button 
+            </Button>
+            <Button 
             onClick={generateExcel} 
             style={{ 
               backgroundColor: '#1890ff', 
@@ -331,9 +331,9 @@ export default function AllOrders() {
             }}
           >
             <HiDownload className="mr-2" /> Export to Excel
-          </Button>
-          <Button 
-            onClick={generateText} 
+            </Button>
+            <Button 
+              onClick={generateText}
             style={{ 
               backgroundColor: '#1890ff', 
               color: '#fff', 
@@ -341,9 +341,9 @@ export default function AllOrders() {
             }}
           >
             <HiDownload className="mr-2" /> Export to Text
-          </Button>
-          <Button 
-            onClick={generateHTML} 
+            </Button>
+            <Button 
+              onClick={generateHTML}
             style={{ 
               backgroundColor: '#1890ff', 
               color: '#fff', 
@@ -351,46 +351,46 @@ export default function AllOrders() {
             }}
           >
             <HiDownload className="mr-2" /> Download HTML
-          </Button>
+            </Button>
+          </div>
         </div>
-      </div>
 
       {/* Filters */}
       <div className="mb-4 flex gap-4">
-        <Select
-          value={selectedYear}
-          onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-        >
+              <Select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+              >
           {[...Array(5)].map((_, i) => (
             <option key={i} value={new Date().getFullYear() - i}>
               {new Date().getFullYear() - i}
             </option>
-          ))}
-        </Select>
+                ))}
+              </Select>
 
-        <Select
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(e.target.value)}
-        >
-          <option value="">All Months</option>
+              <Select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+              >
+                <option value="">All Months</option>
           {[...Array(12)].map((_, i) => (
-            <option key={i} value={i}>
-              {new Date(2000, i).toLocaleString('default', { month: 'long' })}
-            </option>
-          ))}
-        </Select>
+                  <option key={i} value={i}>
+                    {new Date(2000, i).toLocaleString('default', { month: 'long' })}
+                  </option>
+                ))}
+              </Select>
 
-        <Select
-          value={selectedDay}
-          onChange={(e) => setSelectedDay(e.target.value)}
-        >
-          <option value="">All Days</option>
+              <Select
+                value={selectedDay}
+                onChange={(e) => setSelectedDay(e.target.value)}
+              >
+                <option value="">All Days</option>
           {[...Array(31)].map((_, i) => (
             <option key={i} value={i + 1}>
-              {i + 1}
-            </option>
-          ))}
-        </Select>
+                    {i + 1}
+                  </option>
+                ))}
+              </Select>
       </div>
 
       {/* Stats Cards */}
@@ -405,14 +405,14 @@ export default function AllOrders() {
           </div>
         </Card>
 
-        <Card>
+          <Card>
           <div className="flex items-center">
             <ClockCircleOutlined className="text-2xl mr-2" />
             <div>
               <p className="text-gray-500">Pending Orders</p>
               <p className="text-xl font-bold">{stats.pendingOrders}</p>
             </div>
-          </div>
+                </div>
         </Card>
 
         <Card>
@@ -422,10 +422,10 @@ export default function AllOrders() {
               <p className="text-gray-500">Total Revenue</p>
               <p className="text-xl font-bold">${stats.totalRevenue.toFixed(2)}</p>
             </div>
-          </div>
-        </Card>
+            </div>
+          </Card>
 
-        <Card>
+          <Card>
           <div className="flex items-center">
             <UserOutlined className="text-2xl mr-2" />
             <div>
@@ -463,10 +463,7 @@ export default function AllOrders() {
             </LineChart>
           </ResponsiveContainer>
         </Card>
-      </div>
 
-      {/* Pie Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
         <Card className="chart-container" title="Sales Overview (Pie Chart)">
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
@@ -530,9 +527,6 @@ export default function AllOrders() {
                   type="monotone"
                   dataKey={statusObj.status}
                   stroke={COLORS[index % COLORS.length]}
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
                 />
               ))}
             </LineChart>
@@ -543,26 +537,26 @@ export default function AllOrders() {
       {/* Orders Table */}
       <Card title="Orders">
         <Table>
-          <Table.Head>
-            <Table.HeadCell>Order ID</Table.HeadCell>
+            <Table.Head>
+              <Table.HeadCell>Order ID</Table.HeadCell>
             <Table.HeadCell>Date</Table.HeadCell>
-            <Table.HeadCell>Customer</Table.HeadCell>
+              <Table.HeadCell>Customer</Table.HeadCell>
             <Table.HeadCell>Amount</Table.HeadCell>
-            <Table.HeadCell>Status</Table.HeadCell>
-          </Table.Head>
-          <Table.Body>
-            {filteredOrders.map((order) => (
+              <Table.HeadCell>Status</Table.HeadCell>
+            </Table.Head>
+            <Table.Body>
+              {filteredOrders.map((order) => (
               <Table.Row key={order._id}>
                 <Table.Cell>{order._id}</Table.Cell>
                 <Table.Cell>{new Date(order.createdAt).toLocaleDateString()}</Table.Cell>
                 <Table.Cell>{order.userId}</Table.Cell>
                 <Table.Cell>${calculateOrderTotal(order).toFixed(2)}</Table.Cell>
                 <Table.Cell>{order.status}</Table.Cell>
-              </Table.Row>
-            ))}
-          </Table.Body>
-        </Table>
-      </Card>
+                </Table.Row>
+              ))}
+            </Table.Body>
+          </Table>
+        </Card>
     </div>
   );
 }

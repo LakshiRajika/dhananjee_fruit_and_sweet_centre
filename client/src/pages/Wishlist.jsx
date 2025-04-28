@@ -42,12 +42,12 @@ export default function Wishlist() {
     }
   };
 
-  const handleRemoveFromWishlist = async (itemId) => {
+  const handleRemoveFromWishlist = async (item) => {
     try {
       const userId = currentUser?._id;
-      console.log('Removing item from wishlist:', { userId, itemId });
+      console.log('Removing item from wishlist:', { userId, itemId: item.productId });
       
-      const response = await axios.delete(`${SERVER_URL}/api/wishlist/${userId}/${itemId}`);
+      const response = await axios.delete(`${SERVER_URL}/api/wishlist/${userId}/${item.productId}`);
       console.log('Remove response:', response.data);
       
       if (response.data.success) {
@@ -98,7 +98,7 @@ export default function Wishlist() {
                   type="text"
                   danger
                   icon={<DeleteOutlined />}
-                  onClick={() => handleRemoveFromWishlist(item._id)}
+                  onClick={() => handleRemoveFromWishlist(item)}
                 >
                   Remove
                 </Button>,
@@ -123,4 +123,4 @@ export default function Wishlist() {
       )}
     </div>
   );
-} 
+}

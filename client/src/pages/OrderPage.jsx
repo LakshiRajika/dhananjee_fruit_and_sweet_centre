@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Table, Card, Typography, Button, message, Space, Tag, Descriptions, Spin, Popconfirm } from 'antd';
-import { EyeOutlined, DownloadOutlined, FilePdfOutlined, ShoppingCartOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Table, Card, Typography, Button, message, Space, Tag, Descriptions, Spin, Popconfirm, Modal } from 'antd';
+import { EyeOutlined, DownloadOutlined, FilePdfOutlined, ShoppingCartOutlined, DeleteOutlined, RollbackOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import jsPDF from "jspdf";
 import autoTable from 'jspdf-autotable';
 import axios from 'axios';
+import RefundRequest from '../components/RefundRequest';
 
 const { Title, Text } = Typography;
 
@@ -15,6 +16,8 @@ export default function OrderPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [isRefundModalVisible, setIsRefundModalVisible] = useState(false);
 
   useEffect(() => {
     if (userId) {
@@ -111,6 +114,16 @@ export default function OrderPage() {
     }
   };
 
+  const showRefundModal = (order) => {
+    setSelectedOrder(order);
+    setIsRefundModalVisible(true);
+  };
+
+  const handleRefundModalClose = () => {
+    setIsRefundModalVisible(false);
+    setSelectedOrder(null);
+  };
+
   const columns = [
     {
       title: 'Order ID',
@@ -158,6 +171,14 @@ export default function OrderPage() {
             onClick={() => handleTrackOrderClick(record.orderId)}
           >
             Track Order
+          </Button>
+          <Button
+            type="primary"
+            icon={<RollbackOutlined />}
+            onClick={() => showRefundModal(record)}
+            disabled={record.status === 'cancelled' || record.status === 'refunded'}
+          >
+            Request Refund
           </Button>
           <Popconfirm
             title="Delete Order"
@@ -515,6 +536,21 @@ export default function OrderPage() {
           }}
         />
       )}
+
+      <Modal
+        title="Request Refund"
+        open={isRefundModalVisible}
+        onCancel={handleRefundModalClose}
+        footer={null}
+        width={600}
+      >
+        {selectedOrder && (
+          <RefundRequest 
+            orderId={selectedOrder.orderId} 
+            amount={selectedOrder.totalAmount} 
+          />
+        )}
+      </Modal>
     </div>
   );
 }

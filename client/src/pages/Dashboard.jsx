@@ -16,6 +16,8 @@ import AdminOrders from './AdminOrders';
 import DashDeliveries from '../components/DashDeliveries';
 import UserOrders from '../components/UserOrders';
 import AllOrders from '../components/AllOrders';
+import OrderPrediction from '../components/OrderPrediction';
+import RefundManagement from '../components/RefundManagement';
 
 export default function Dashboard() {
   const location = useLocation();
@@ -48,6 +50,8 @@ export default function Dashboard() {
       {tab === "my-orders" && <UserOrders />}
       {tab === "my-deliveries" && <DashDeliveries />}
       {tab === "all-orders" && <AllOrders />}
+      {tab === "order-prediction" && <OrderPrediction />}
+      {tab === "refunds" && <RefundManagement />}
     </div>
   );
 }

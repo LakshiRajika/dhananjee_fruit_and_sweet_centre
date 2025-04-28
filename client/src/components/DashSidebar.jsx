@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { signoutSuccess } from "../redux/user/userSlice";
 import { useDispatch, useSelector } from "react-redux";
+import { RollbackOutlined, ShoppingCartOutlined } from '@ant-design/icons';
 
 export default function DashSidebar() {
   const location = useLocation();
@@ -180,7 +181,7 @@ export default function DashSidebar() {
                 icon={HiShoppingCart}
                 label="Orders"
                 className={`hover:bg-gray-200 ${
-                  tab === "orders" || tab === "all-orders" ? "bg-gray-300" : ""
+                  tab === "orders" || tab === "all-orders" || tab === "order-prediction" || tab === "refunds" ? "bg-gray-300" : ""
                 }`}
               >
                 <Link to="/dashboard?tab=orders">
@@ -204,6 +205,30 @@ export default function DashSidebar() {
                     as="div"
                   >
                     Order Summary
+                  </Sidebar.Item>
+                </Link>
+
+                <Link to="/dashboard?tab=order-prediction">
+                  <Sidebar.Item
+                    className={`hover:bg-gray-200 ${
+                      tab === "order-prediction" ? "bg-gray-300" : ""
+                    }`}
+                    icon={HiChartPie}
+                    as="div"
+                  >
+                    Order Prediction
+                  </Sidebar.Item>
+                </Link>
+
+                <Link to="/dashboard?tab=refunds">
+                  <Sidebar.Item
+                    className={`hover:bg-gray-200 ${
+                      tab === "refunds" ? "bg-gray-300" : ""
+                    }`}
+                    icon={RollbackOutlined}
+                    as="div"
+                  >
+                    Refund Management
                   </Sidebar.Item>
                 </Link>
               </Sidebar.Collapse>
