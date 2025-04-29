@@ -339,3 +339,39 @@ export const updateDeliveryDetails = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to update delivery details' });
   }
 };
+
+// Add this new function with your existing controller functions
+export const getDeliveryById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid delivery ID format!"
+      });
+    }
+
+    const delivery = await Delivery.findById(id);
+    
+    if (!delivery) {
+      return res.status(404).json({
+        success: false,
+        message: "Delivery not found"
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Delivery details retrieved successfully",
+      data: delivery
+    });
+  } catch (error) {
+    console.error("Error fetching delivery:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching delivery",
+      error: error.message
+    });
+  }
+};

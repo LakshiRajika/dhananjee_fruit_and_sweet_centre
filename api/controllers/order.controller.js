@@ -654,4 +654,32 @@ export const deleteAllOrders = async (req, res) => {
       error: error.message
     });
   }
-}; 
+};
+
+// Add this new function with your existing controller functions
+export const getOrderById = async (req, res) => {
+  const { orderId } = req.params;
+  try {
+    const order = await Order.findOne({ orderId });
+    
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found"
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Order retrieved successfully",
+      data: order
+    });
+  } catch (error) {
+    console.error("Error fetching order:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching order",
+      error: error.message
+    });
+  }
+};

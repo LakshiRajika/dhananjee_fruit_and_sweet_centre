@@ -4,7 +4,8 @@ import {
   getDeliveryDetails,
   deleteDeliveryDetails,
   getAllDeliveries,
-  updateDeliveryDetails
+  updateDeliveryDetails,
+  getDeliveryById
 } from '../controllers/delivery.controller.js';
 
 const router = express.Router();
@@ -19,5 +20,8 @@ router.get('/user/:userId', getDeliveryDetails);
 // Delivery CRUD operations
 router.put('/:id', updateDeliveryDetails);
 router.delete('/:id', deleteDeliveryDetails);
+
+// Add this new route with your existing routes
+router.get('/:id', getDeliveryById);
 
 export default router;

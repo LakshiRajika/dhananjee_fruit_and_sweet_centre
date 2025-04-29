@@ -8,7 +8,8 @@ import {
   getAllOrders,
   generateAdminAllOrdersPDF,
   deleteOrder,
-  deleteAllOrders
+  deleteAllOrders,
+  getOrderById
 } from '../controllers/order.controller.js';
 
 const router = express.Router();
@@ -21,6 +22,7 @@ router.get('/pdf/:orderId', generateOrderPDF);
 router.get('/all-pdf/:userId', generateAllOrdersPDF);
 router.delete('/:orderId', deleteOrder);
 router.delete('/user/:userId/all', deleteAllOrders);
+router.get('/track/:orderId', getOrderById);
 
 // Admin routes
 router.get('/all', getAllOrders);
