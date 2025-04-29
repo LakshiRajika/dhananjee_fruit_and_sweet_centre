@@ -27,7 +27,6 @@ export const sendPaymentSuccessEmail = async (req, res) => {
     console.log('Attempting to send email to:', to);
     console.log('Order details:', orderDetails);
 
-    // Email content
     const mailOptions = {
       from: '"Dhananjee Fruit and Sweet Centre" <sashinigeshani1@gmail.com>',
       to: to,
