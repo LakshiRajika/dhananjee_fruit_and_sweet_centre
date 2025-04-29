@@ -1,22 +1,39 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Card, Tag, Button, message, Select, Space } from 'antd';
-import { DownloadOutlined, FilePdfOutlined, FileTextOutlined } from '@ant-design/icons';
+import { Table, Card, Tag, Button, message, Select, Space, DatePicker } from 'antd';
+import { DownloadOutlined, FilePdfOutlined, FileTextOutlined, SearchOutlined } from '@ant-design/icons';
 import { jsPDF } from "jspdf";
 import 'jspdf-autotable';
 import { autoTable } from 'jspdf-autotable';
 import axios from 'axios';
+import dayjs from 'dayjs';
 
 const { Option } = Select;
+const { RangePicker } = DatePicker;
 const SERVER_URL = 'http://localhost:3000';
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
+  const [filteredOrders, setFilteredOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
+  const [dateRange, setDateRange] = useState(null);
 
   useEffect(() => {
     fetchAllOrders();
   }, []);
+
+  useEffect(() => {
+    if (dateRange) {
+      const [startDate, endDate] = dateRange;
+      const filtered = orders.filter(order => {
+        const orderDate = dayjs(order.createdAt);
+        return orderDate.isAfter(startDate) && orderDate.isBefore(endDate);
+      });
+      setFilteredOrders(filtered);
+    } else {
+      setFilteredOrders(orders);
+    }
+  }, [dateRange, orders]);
 
   const fetchAllOrders = async () => {
     try {
@@ -31,6 +48,7 @@ export default function AdminOrders() {
       
       if (response.data.success) {
         setOrders(response.data.data);
+        setFilteredOrders(response.data.data);
         setRetryCount(0);
       } else {
         message.error(response.data.message || 'Failed to fetch orders');
@@ -569,9 +587,30 @@ export default function AdminOrders() {
           </Space>
         }
       >
+        <div style={{ marginBottom: '20px' }}>
+          <Space>
+            <RangePicker
+              value={dateRange}
+              onChange={(dates) => setDateRange(dates)}
+              style={{ width: 300 }}
+              placeholder={['Start Date', 'End Date']}
+            />
+            <Button 
+              type="primary" 
+              icon={<SearchOutlined />}
+              onClick={() => {
+                setDateRange(null);
+                setFilteredOrders(orders);
+              }}
+            >
+              Clear Filter
+            </Button>
+          </Space>
+        </div>
+
         <Table
           columns={columns}
-          dataSource={orders}
+          dataSource={filteredOrders}
           rowKey="orderId"
           expandable={{
             expandedRowRender,
@@ -582,4 +621,4 @@ export default function AdminOrders() {
       </Card>
     </div>
   );
-} 
+}

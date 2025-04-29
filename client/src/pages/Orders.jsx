@@ -1,24 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, List, Typography, Button, Tag, Space, message, Table, Popconfirm } from 'antd';
+import { Card, List, Typography, Button, Tag, Space, message, Table, Popconfirm, DatePicker } from 'antd';
 import { 
   ArrowLeftOutlined, 
   ShoppingOutlined, 
   DownloadOutlined, 
   CompassOutlined,
-  DeleteOutlined 
+  DeleteOutlined,
+  SearchOutlined 
 } from '@ant-design/icons';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
 import { generateOrderPDF } from '../utils/pdfService';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
+const { RangePicker } = DatePicker;
 
 export default function Orders() {
   const navigate = useNavigate();
   const currentUser = useSelector((state) => state.user.currentUser);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filteredOrders, setFilteredOrders] = useState([]);
+  const [dateRange, setDateRange] = useState(null);
 
   useEffect(() => {
     if (currentUser?._id) {
@@ -26,12 +31,26 @@ export default function Orders() {
     }
   }, [currentUser?._id]);
 
+  useEffect(() => {
+    if (dateRange) {
+      const [startDate, endDate] = dateRange;
+      const filtered = orders.filter(order => {
+        const orderDate = dayjs(order.createdAt);
+        return orderDate.isAfter(startDate) && orderDate.isBefore(endDate);
+      });
+      setFilteredOrders(filtered);
+    } else {
+      setFilteredOrders(orders);
+    }
+  }, [dateRange, orders]);
+
   const fetchOrders = async () => {
     setLoading(true);
     try {
       const response = await axios.get(`http://localhost:3000/api/order/user/${currentUser._id}`);
       if (response.data.success) {
         setOrders(response.data.data);
+        setFilteredOrders(response.data.data);
       } else {
         message.error('Failed to fetch orders');
       }
@@ -222,11 +241,32 @@ export default function Orders() {
         )}
       </div>
 
+      <div style={{ marginBottom: '20px' }}>
+        <Space>
+          <RangePicker
+            value={dateRange}
+            onChange={(dates) => setDateRange(dates)}
+            style={{ width: 300 }}
+            placeholder={['Start Date', 'End Date']}
+          />
+          <Button 
+            type="primary" 
+            icon={<SearchOutlined />}
+            onClick={() => {
+              setDateRange(null);
+              setFilteredOrders(orders);
+            }}
+          >
+            Clear Filter
+          </Button>
+        </Space>
+      </div>
+
       {loading ? (
         <div style={{ textAlign: 'center', padding: '20px' }}>
           <Card loading={true} />
         </div>
-      ) : orders.length === 0 ? (
+      ) : filteredOrders.length === 0 ? (
         <Card>
           <div style={{ textAlign: 'center', padding: '20px' }}>
             <ShoppingOutlined style={{ fontSize: '48px', color: '#ccc' }} />
@@ -239,7 +279,7 @@ export default function Orders() {
       ) : (
         <Table
           columns={columns}
-          dataSource={orders}
+          dataSource={filteredOrders}
           rowKey="orderId"
           pagination={{
             pageSize: 10,

@@ -3,14 +3,12 @@ import { v4 as uuidv4 } from 'uuid';
 import CartItem from '../models/CartItemSchema.js';
 import Wishlist from '../models/wishlist.model.js';
 
-// Add item to wishlist
 export const addToWishlist = async (req, res) => {
   try {
     const { userId, productId, name, price, image, description, category } = req.body;
     
     console.log('Received wishlist data:', { userId, productId, name, price, image, description, category });
 
-    // Validate required fields
     if (!userId || !productId || !name || price === undefined || !image) {
       console.log('Missing required fields:', { userId, productId, name, price, image });
       return res.status(400).json({
@@ -27,12 +25,10 @@ export const addToWishlist = async (req, res) => {
     }
 
     try {
-      // Convert userId to ObjectId
       const userObjectId = new mongoose.Types.ObjectId(userId);
       
       console.log('Converted user ID:', userObjectId);
 
-      // Check if item already exists in wishlist
       const existingItem = await Wishlist.findOne({ userId: userObjectId, productId: productId });
       if (existingItem) {
         console.log('Item already exists in wishlist:', existingItem);
@@ -42,10 +38,9 @@ export const addToWishlist = async (req, res) => {
         });
       }
 
-      // Create new wishlist item
       const wishlistItem = new Wishlist({
         userId: userObjectId,
-        productId: productId, // Keep as string, don't convert to ObjectId
+        productId: productId, 
         name: name.toString(),
         price: Number(price),
         image: image.toString(),
@@ -74,7 +69,7 @@ export const addToWishlist = async (req, res) => {
   } catch (error) {
     console.error('Error adding to wishlist:', error);
     
-    if (error.code === 11000) { // Duplicate key error
+    if (error.code === 11000) { 
       return res.status(400).json({
         success: false,
         message: 'Item already in wishlist'
@@ -97,20 +92,16 @@ export const addToWishlist = async (req, res) => {
   }
 };
 
-// Get user's wishlist
 export const getWishlist = async (req, res) => {
   try {
     const { userId } = req.params;
     console.log('Fetching wishlist for userId:', userId);
 
-    // Convert userId to ObjectId
     const userObjectId = new mongoose.Types.ObjectId(userId);
 
-    // First, check if the user exists and has any items
     const count = await Wishlist.countDocuments({ userId: userObjectId });
     console.log('Total wishlist items count:', count);
 
-    // Get all items without any limit
     const wishlistItems = await Wishlist.find({ userId: userObjectId }).sort({ createdAt: -1 });
     console.log('Found wishlist items:', wishlistItems.length);
     console.log('All items:', wishlistItems);
@@ -148,13 +139,11 @@ export const getWishlist = async (req, res) => {
   }
 };
 
-// Remove item from wishlist
 export const removeFromWishlist = async (req, res) => {
   try {
     const { userId, itemId } = req.params;
     console.log('Removing from wishlist:', { userId, itemId });
 
-    // Convert userId to ObjectId
     const userObjectId = new mongoose.Types.ObjectId(userId);
 
     console.log('Looking for wishlist item with:', { userId: userObjectId, productId: itemId });
@@ -185,7 +174,6 @@ export const removeFromWishlist = async (req, res) => {
   }
 };
 
-// Move item from wishlist to cart
 export const moveToCart = async (req, res) => {
   const { itemId } = req.params;
   try {
@@ -197,7 +185,6 @@ export const moveToCart = async (req, res) => {
       });
     }
 
-    // Create cart item
     const cartItem = new CartItem({
       userId: wishlistItem.userId,
       itemId: uuidv4(),

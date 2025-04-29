@@ -22,11 +22,9 @@ const wishlistSchema = new mongoose.Schema({
     type: String,
     required: true,
     get: (image) => {
-      // If image is already a full URL, return as is
       if (image.startsWith('http')) {
         return image;
       }
-      // Otherwise, prepend the server URL
       return `http://localhost:3000${image}`;
     }
   },
@@ -40,13 +38,11 @@ const wishlistSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true,
-  toJSON: { getters: true } // Enable getters when converting to JSON
+  toJSON: { getters: true } 
 });
 
-// Create a compound index to prevent duplicates of the same product for the same user
 wishlistSchema.index({ userId: 1, productId: 1 }, { unique: true });
 
-// Add debugging middleware
 wishlistSchema.post('find', function(docs) {
   console.log('Found wishlist items:', docs);
 });
