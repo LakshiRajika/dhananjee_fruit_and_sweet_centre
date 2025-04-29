@@ -15,6 +15,7 @@ import PaymentSuccess from "./pages/PaymentSuccess";
 import OrderPage from "./pages/OrderPage"; // Import OrderPage component
 import Feedback from "./pages/Feedback"; // Corrected import for Feedback
 import FeedbackForm from "./pages/feedbackForm";
+import EditFeedback from './pages/editFeedback';
 import TrackOrderPage from "./pages/TrackOrderPage";
 import PaymentFailed from "./pages/PaymentFailed";
 import DeliveryDetails from "./pages/DeliveryDetails";
@@ -55,9 +56,9 @@ export default function App() {
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/order" element={<OrderPage />} /> {/* Order page route */}
         <Route path="/feedback" element={<FeedbackForm />} />{" "}
-        {/* Corrected route for Feedback */}
-        <Route path="/feedback-form" element={<FeedbackForm />} />{" "}
-        {/* Feedback Form route */}
+        <Route path="/edit-feedback/:id" element={<EditFeedback />} />
+
+     
         <Route path="/payment-failed" element={<PaymentFailed />} />
         <Route path="/myOrders" element={<OrderPage />} />
         <Route path="/trackOrder/:orderId" element={<TrackOrderPage />} />

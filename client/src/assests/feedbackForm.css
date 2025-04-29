@@ -1,97 +1,140 @@
-.feedback-container {
-  max-width: 800px; /* Increased width for a larger form */
-  margin: 40px auto; /* Added margin for spacing */
-  padding: 40px; /* Increased padding for a spacious layout */
-  background-color: #ffffff; /* Clean white background */
-  border-radius: 15px; /* Slightly rounded corners */
-  box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.1); /* Softer shadow */
+/* Page Container */
+.feedback-page {
+  padding: 30px 20px;
+  background-color: #f9f9f9;
+  min-height: 100vh;
   font-family: "Arial", sans-serif;
 }
 
-h2 {
-  text-align: center;
-  color: #2c3e50; /* Dark blue for a professional look */
-  font-weight: 700;
-  font-size: 24px; /* Increased font size */
+/* Form Container */
+.feedback-form-container {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 30px;
+  background: #fff;
+  border-radius: 15px;
+  box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.1);
 }
 
-form {
+/* Form Title */
+.form-title {
+  text-align: center;
+  color: #2c3e50;
+  font-weight: 700;
+  margin-bottom: 20px;
+  font-size: 28px;
+}
+
+/* Form Elements */
+.feedback-form {
   display: flex;
   flex-direction: column;
 }
 
-label {
+.feedback-form label {
   font-weight: 600;
   margin-top: 14px;
-  color: #34495e; /* Darkened text for readability */
+  color: #34495e;
   font-size: 16px;
 }
 
-input,
-select,
-textarea {
-  padding: 14px;
-  border: 2px solid #3498db; /* Thicker blue border */
-  border-radius: 10px;
+.feedback-form input,
+.feedback-form select,
+.feedback-form textarea {
+  padding: 12px;
   margin-top: 8px;
-  font-size: 17px;
+  border: 2px solid #3498db;
+  border-radius: 10px;
+  font-size: 16px;
 }
 
-textarea {
+.feedback-form textarea {
   resize: none;
-  height: 150px; /* Increased height for better typing experience */
+  height: 120px;
 }
 
-button {
-  background-color: #70777e6c; /* Bootstrap Blue */
-  color: white;
-  border: none;
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  margin-top: 14px;
+}
+
+.submit-btn {
+  background-color: #3498db;
+  color: #fff;
   padding: 14px;
   margin-top: 24px;
-  cursor: pointer;
   font-size: 17px;
-  border-radius: 10px;
   font-weight: bold;
-  transition: 0.3s ease-in-out;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.3s;
 }
 
-button:hover {
-  background-color: #494d52; /* Darker blue on hover */
-  transform: scale(1.05); /* Slight hover effect */
+.submit-btn:hover {
+  background-color: #2980b9;
+  transform: scale(1.05);
 }
 
+/* Star Rating */
 .star-rating {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   font-size: 30px;
   cursor: pointer;
 }
 
 .star {
-  color: #d3d3d3; /* Default gray stars */
+  color: #d3d3d3;
   transition: color 0.3s;
 }
 
 .star.selected {
-  color: #f1c40f; /* Yellow stars */
+  color: #f1c40f;
 }
 
-.reviews {
-  margin-top: 50px;
+/* Reviews Section */
+.reviews-section {
+  max-width: 800px;
+  margin: 50px auto;
 }
 
-.review-item {
-  background-color: #f8f9fa; /* Light gray for contrast */
+.reviews-section h3 {
+  text-align: center;
+  color: #2c3e50;
+  margin-bottom: 20px;
+}
+
+.review-card {
+  background: #f8f9fa;
   padding: 18px;
-  margin: 12px 0;
+  margin-bottom: 20px;
   border-radius: 10px;
-  border-left: 5px solid #007bff; /* Blue accent border */
-  font-size: 16px;
+  border-left: 5px solid #3498db;
+  box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.08);
 }
 
-.review-item img {
-  max-width: 100%;
-  height: auto;
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.review-rating {
+  font-weight: bold;
+  color: #2980b9;
+}
+
+.review-text {
+  font-size: 16px;
+  color: #555;
+}
+
+.review-image {
+  width: 100%;
+  max-height: 300px;
+  object-fit: cover;
   border-radius: 10px;
   margin-top: 12px;
   box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.1);

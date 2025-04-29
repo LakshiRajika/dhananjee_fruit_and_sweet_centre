@@ -98,6 +98,18 @@ export default function DashSidebar() {
             </Sidebar.Item>
           </Link>
 
+        <Link to="/dashboard?tab=my-feedbacks">
+          <Sidebar.Item
+            className={`hover:bg-gray-200 ${
+              tab === "my-feedbacks" ? "bg-gray-300" : ""
+            }`}
+            icon={HiChatAlt2}
+            as="div"
+  >
+              My Feedbacks
+          </Sidebar.Item>
+        </Link>
+
           {currentUser.isAdmin && (
             <>
               <Link to="/dashboard?tab=users">

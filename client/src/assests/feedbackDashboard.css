@@ -43,6 +43,31 @@
 .positive { background: #28a745; }
 .negative { background: #dc3545; }
 
+/* Filter Container */
+.filter-container {
+    margin: 15px 0;
+    text-align: center;
+}
+
+.filter-container label {
+    font-size: 16px;
+    margin-right: 10px;
+    font-weight: bold;
+}
+
+.filter-container select {
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+}
+
+.filter-container select:focus {
+    border-color: #007bff;
+}
+
 /* Charts Section */
 .charts-container {
     display: flex;
@@ -211,5 +236,16 @@
 
     .reply-modal {
         width: 90%;
+    }
+
+    /* Modify filter layout for smaller screens */
+    .filter-container {
+        display: flex;
+        justify-content: center;
+        margin: 10px 0;
+    }
+
+    .filter-container select {
+        width: 200px;
     }
 }

@@ -8,6 +8,7 @@ import DashUsers from '../components/DashUsers';
 import DashComments from '../components/DashComments';
 import DashboardComp from '../components/DashboardComp';
 import FeedbackDashboard from './FeedbackDashboard';
+import MyFeedbacks from './myFeedback';
 import ProductList from './ProductList'
 import AddProduct from './InsertProduct'
 
@@ -41,16 +42,16 @@ export default function Dashboard() {
       {tab=="addProduct"&& <AddProduct/>}
       {/* feedback */}
       {tab === "feedback" && <FeedbackDashboard />}
-      {/* dashboard comp */}
+      {tab === "my-feedbacks" && <MyFeedbacks />}
+
+
       {/* comments  */}
-
-
       {tab === "comments" && <DashComments />}
       
       {tab === "delivery-details" && <AdminDeliveryManagement />}
       {tab === "dash" && <DashboardComp />}
       {/* Render the feedback page  correct*/}
-      {tab === "feedback" && <Feedback />}
+      
 
       {tab === "active-users" && <ActiveUsers />}
 

@@ -9,6 +9,7 @@ const FeedbackDashboard = () => {
     const [replyText, setReplyText] = useState('');
     const [selectedFeedback, setSelectedFeedback] = useState(null);
     const [stats, setStats] = useState({ total: 0, today: 0, positive: 0, negative: 0 });
+    const [statusFilter, setStatusFilter] = useState('All');  // New state for filter
 
     useEffect(() => {
         axios.get('http://localhost:3000/api/feedback')
@@ -81,6 +82,11 @@ const FeedbackDashboard = () => {
             .catch(error => console.error("Error deleting feedback:", error));
     };
 
+    // Filter feedbacks based on the selected status
+    const filteredFeedbacks = statusFilter === 'All' 
+        ? feedbacks 
+        : feedbacks.filter(fb => fb.status === statusFilter);
+
     return (
         <div className="dashboard-container">
             <h1 className="dashboard-title">Feedback Dashboard</h1>
@@ -89,6 +95,20 @@ const FeedbackDashboard = () => {
                 <div className="stat-box today">Today's Feedbacks: {stats.today}</div>
                 <div className="stat-box positive">Positive Feedbacks: {stats.positive}</div>
                 <div className="stat-box negative">Negative Feedbacks: {stats.negative}</div>
+            </div>
+
+            {/* Filter Dropdown */}
+            <div className="filter-container">
+                <label htmlFor="statusFilter">Filter by Status: </label>
+                <select 
+                    id="statusFilter" 
+                    value={statusFilter} 
+                    onChange={(e) => setStatusFilter(e.target.value)}>
+                    <option value="All">All</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Rejected">Rejected</option>
+                </select>
             </div>
 
             <div className="charts-container">
@@ -130,7 +150,7 @@ const FeedbackDashboard = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {feedbacks.map(feedback => (
+                        {filteredFeedbacks.map(feedback => (
                             <tr key={feedback._id}>
                                 <td>{feedback.anonymous ? "Anonymous" : feedback.customerName}</td>
                                 <td>{feedback.orderId}</td>

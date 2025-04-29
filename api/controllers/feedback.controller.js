@@ -31,6 +31,23 @@ const getAllFeedback=async (req, res, next) => {
     return res.status(200).json({feedbacks});
 }
 
+// Get feedbacks by user email 
+const getUserFeedbacks = async (req, res, next) => {
+    const { email } = req.params;  
+
+    try {
+        const feedbacks = await feedback.find({ email }).sort({ createdAt: -1 });
+        if (!feedbacks.length) {
+            return res.status(404).json({ message: "No feedbacks found for this user" });
+        }
+        return res.status(200).json({ feedbacks });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Server error fetching user feedbacks" });
+    }
+};
+
+
 function categorizeFeedback(rating){
     rating = Number(rating);
     if(rating>=4){
@@ -134,4 +151,4 @@ const getFeedbackStats = async (req, res) => {
     }
 };
 
-export { getAllFeedback, addFeedback, getById, updateFeedback, deleteFeedback, getFeedbackStats };
+export { getAllFeedback, addFeedback, getById, updateFeedback, deleteFeedback, getFeedbackStats, getUserFeedbacks };
