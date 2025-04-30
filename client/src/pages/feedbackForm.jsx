@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useSelector } from "react-redux"; // ✅ import useSelector
-import "../assests/feedbackForm.css"; // Make sure your folder is correctly spelled "assets"!
+import { useSelector } from "react-redux";
+import "../assests/feedbackForm.css";
 
 const FeedbackForm = () => {
   const [formData, setFormData] = useState({
@@ -16,10 +16,9 @@ const FeedbackForm = () => {
     anonymous: false,
   });
 
-  const { currentUser } = useSelector((state) => state.user); // ✅ get currentUser from Redux
+  const { currentUser } = useSelector((state) => state.user);
   const [reviews, setReviews] = useState([]);
 
-  // ✅ Automatically fill email if user is logged in
   useEffect(() => {
     if (currentUser?.email) {
       setFormData((prev) => ({
@@ -29,7 +28,6 @@ const FeedbackForm = () => {
     }
   }, [currentUser]);
 
-  // Fetch existing reviews
   useEffect(() => {
     const fetchReviews = async () => {
       try {
@@ -42,7 +40,6 @@ const FeedbackForm = () => {
     fetchReviews();
   }, []);
 
-  // Handle input changes
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({ ...formData, [name]: type === "checkbox" ? checked : value });
@@ -59,7 +56,6 @@ const FeedbackForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation
     const orderIdPattern = /^[A-Za-z0-9]+$/;
     const namePattern = /^[A-Za-z ]{3,}$/;
     if (!orderIdPattern.test(formData.orderId)) {
@@ -97,7 +93,7 @@ const FeedbackForm = () => {
       setFormData({
         orderId: "",
         customerName: "",
-        email: currentUser?.email || "", // ✅ refill email after submitting
+        email: currentUser?.email || "",
         rating: 1,
         review: "",
         image: null,
@@ -107,75 +103,82 @@ const FeedbackForm = () => {
       });
     } catch (error) {
       console.error(error);
-      alert(
-        error.response?.data?.message
-          ? `Failed to submit feedback: ${error.response.data.message}`
-          : "Failed to submit feedback."
-      );
+      alert("Failed to submit feedback.");
     }
   };
 
   return (
     <div className="feedback-page">
       <div className="feedback-form-container">
-        <h2 className="form-title">Let us know your thoughts!</h2>
+        <h2 className="form-title">We value your feedback</h2>
         <form onSubmit={handleSubmit} className="feedback-form">
-          <label>Order ID:</label>
-          <input type="text" name="orderId" value={formData.orderId} onChange={handleChange} required />
+          <div className="form-grid">
+            <div className="form-group">
+              <label>Order ID:</label>
+              <input type="text" name="orderId" value={formData.orderId} onChange={handleChange} required />
+            </div>
 
-          <label>Customer Name:</label>
-          <input type="text" name="customerName" value={formData.customerName} onChange={handleChange} required />
+            <div className="form-group">
+              <label>Customer Name:</label>
+              <input type="text" name="customerName" value={formData.customerName} onChange={handleChange} required />
+            </div>
 
-          <label>Email:</label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            // disabled // ✅ Uncomment this if you want email to be non-editable
-          />
+            <div className="form-group">
+              <label>Email:</label>
+              <input type="email" name="email" value={formData.email} onChange={handleChange} />
+            </div>
 
-          <label>Rating:</label>
-          <div className="star-rating">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <span
-                key={star}
-                className={star <= formData.rating ? "star selected" : "star"}
-                onClick={() => handleRating(star)}
-              >
-                ★
-              </span>
-            ))}
+            <div className="form-group">
+              <label>Rating:</label>
+              <div className="star-rating">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <span
+                    key={star}
+                    className={star <= formData.rating ? "star selected" : "star"}
+                    onClick={() => handleRating(star)}
+                  >
+                    ★
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="form-group full-width">
+              <label>Review:</label>
+              <textarea name="review" value={formData.review} onChange={handleChange} required />
+            </div>
+
+            <div className="form-group">
+              <label>Image (optional):</label>
+              <input type="file" name="image" onChange={handleImageChange} />
+            </div>
+
+            <div className="form-group">
+              <label>Recommended:</label>
+              <select name="recommended" value={formData.recommended} onChange={handleChange}>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+
+            <div className="form-group full-width checkbox-group">
+              <label>
+                <input type="checkbox" name="response" checked={formData.response} onChange={handleChange} /> Need Admin Response
+              </label>
+              <label>
+                <input type="checkbox" name="anonymous" checked={formData.anonymous} onChange={handleChange} /> Anonymous Feedback
+              </label>
+            </div>
+
+            <div className="form-group full-width">
+              <button type="submit" className="submit-btn">Submit Feedback</button>
+            </div>
           </div>
-
-          <label>Review:</label>
-          <textarea name="review" value={formData.review} onChange={handleChange} required />
-
-          <label>Image (optional):</label>
-          <input type="file" name="image" onChange={handleImageChange} />
-
-          <label>Recommended:</label>
-          <select name="recommended" value={formData.recommended} onChange={handleChange}>
-            <option value="Yes">Yes</option>
-            <option value="No">No</option>
-          </select>
-
-          <div className="checkbox-group">
-            <label>
-              <input type="checkbox" name="response" checked={formData.response} onChange={handleChange} /> Need Admin Response
-            </label>
-            <label>
-              <input type="checkbox" name="anonymous" checked={formData.anonymous} onChange={handleChange} /> Anonymous Feedback
-            </label>
-          </div>
-
-          <button type="submit" className="submit-btn">Submit Feedback</button>
         </form>
       </div>
 
-      {/* Reviews Section */}
       <div className="reviews-section">
-        <h3>Recent Customer Reviews</h3>
+        <h3>Customer Reviews</h3>
         {reviews.length === 0 ? (
           <p>No reviews yet.</p>
         ) : (

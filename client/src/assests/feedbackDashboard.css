@@ -1,7 +1,7 @@
 /* General Dashboard Container */
 .dashboard-container {
     width: 90%;
-    max-width: 1300px;  /* Increased width */
+    max-width: 1300px;
     margin: 20px auto;
     padding: 20px;
     background: #ffffff;
@@ -115,6 +115,15 @@
     color: white;
 }
 
+/* Thumbnail Image */
+.feedback-table td img {
+    width: 80px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
 /* Actions Section */
 .actions {
     display: flex;
@@ -177,36 +186,35 @@
     font-size: 14px;
 }
 
+/* Modal Actions */
 .modal-actions {
     display: flex;
     justify-content: space-between;
     margin-top: 10px;
 }
 
-.send-reply {
-    background: #007bff;
-    color: white;
-    padding: 7px 12px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.send-reply:hover {
-    background: #0056b3;
-}
-
 .cancel-reply {
-    background: #6c757d;
+    background: #dc3545;
     color: white;
     padding: 7px 12px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
 }
-
 .cancel-reply:hover {
-    background: #5a6268;
+    background: #c82333;
+}
+
+.send-reply {
+    background: #28a745;
+    color: white;
+    padding: 7px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.send-reply:hover {
+    background: #218838;
 }
 
 /* Responsive Design */
@@ -238,7 +246,6 @@
         width: 90%;
     }
 
-    /* Modify filter layout for smaller screens */
     .filter-container {
         display: flex;
         justify-content: center;
@@ -247,5 +254,10 @@
 
     .filter-container select {
         width: 200px;
+    }
+
+    .feedback-table td img {
+        width: 60px;
+        height: 45px;
     }
 }
