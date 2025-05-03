@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Table, Card, Typography, Button, message, Space, Tag, Descriptions, Spin, Popconfirm, Modal } from 'antd';
+import { Table, Card, Typography, Button, message, Space, Tag, Descriptions, Spin, Popconfirm, Modal, DatePicker } from 'antd';
 import { EyeOutlined, DownloadOutlined, FilePdfOutlined, ShoppingCartOutlined, DeleteOutlined, RollbackOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import jsPDF from "jspdf";
@@ -9,6 +9,7 @@ import axios from 'axios';
 import RefundRequest from '../components/RefundRequest';
 
 const { Title, Text } = Typography;
+const { RangePicker } = DatePicker;
 
 export default function OrderPage() {
   const currentUser = useSelector((state) => state.user.currentUser);
@@ -18,6 +19,8 @@ export default function OrderPage() {
   const navigate = useNavigate();
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isRefundModalVisible, setIsRefundModalVisible] = useState(false);
+  const [dateRange, setDateRange] = useState(null);
+  const [filteredOrders, setFilteredOrders] = useState([]);
 
   useEffect(() => {
     if (userId) {
@@ -27,6 +30,7 @@ export default function OrderPage() {
           console.log('Orders response:', response.data);
           if (response.data.success) {
             setOrders(response.data.data);
+            setFilteredOrders(response.data.data);
           } else {
             message.error(response.data.message || 'Failed to fetch orders');
           }
@@ -40,6 +44,20 @@ export default function OrderPage() {
       fetchOrders();
     }
   }, [userId]);
+
+  useEffect(() => {
+    if (dateRange && dateRange[0] && dateRange[1]) {
+      const [start, end] = dateRange;
+      setFilteredOrders(
+        orders.filter(order => {
+          const orderDate = new Date(order.createdAt);
+          return orderDate >= start.startOf('day').toDate() && orderDate <= end.endOf('day').toDate();
+        })
+      );
+    } else {
+      setFilteredOrders(orders);
+    }
+  }, [dateRange, orders]);
 
   const calculateOrderTotal = (items) => {
     return items.reduce((total, item) => total + item.price * item.quantity, 0).toFixed(2);
@@ -469,6 +487,135 @@ export default function OrderPage() {
     }
   };
 
+  const downloadFilteredOrdersPDF = () => {
+    if (!filteredOrders || filteredOrders.length === 0) {
+      message.error('No filtered orders to generate PDF');
+      return;
+    }
+
+    try {
+      const doc = new jsPDF();
+      let currentY = 20;
+
+      doc.setFontSize(16);
+      doc.text('Filtered Orders Report', 20, currentY);
+      currentY += 15;
+
+      const summaryInfo = [
+        ['Customer:', currentUser?.email || 'N/A'],
+        ['Total Filtered Orders:', filteredOrders.length.toString()],
+        ['Generated On:', new Date().toLocaleString()],
+        ['Total Amount:', `Rs ${filteredOrders.reduce((sum, order) => 
+          sum + parseFloat(calculateOrderTotal(order.items)), 0).toFixed(2)}`]
+      ];
+
+      autoTable(doc, {
+        startY: currentY,
+        body: summaryInfo,
+        theme: 'plain',
+        styles: { fontSize: 10 },
+        columnStyles: {
+          0: { fontStyle: 'bold', cellWidth: 40 },
+          1: { cellWidth: 100 }
+        },
+        didDrawPage: (data) => {
+          currentY = data.cursor.y + 10;
+        }
+      });
+
+      const ordersTableHead = [['Order ID', 'Status', 'Payment', 'Amount', 'Date']];
+      const ordersTableBody = filteredOrders.map(order => [
+        order.orderId.substring(0, 15),
+        order.status.toUpperCase(),
+        order.paymentStatus?.toUpperCase() || '',
+        `Rs ${calculateOrderTotal(order.items)}`,
+        new Date(order.createdAt).toLocaleDateString()
+      ]);
+
+      autoTable(doc, {
+        startY: currentY,
+        head: ordersTableHead,
+        body: ordersTableBody,
+        headStyles: { fillColor: [41, 128, 185] },
+        styles: { fontSize: 9 },
+        columnStyles: {
+          0: { cellWidth: 50 },
+          1: { cellWidth: 35 },
+          2: { cellWidth: 35 },
+          3: { cellWidth: 35 },
+          4: { cellWidth: 35 }
+        },
+        didDrawPage: (data) => {
+          currentY = data.cursor.y + 10;
+        }
+      });
+
+      filteredOrders.forEach((order, index) => {
+        doc.addPage();
+        currentY = 20;
+
+        doc.setFontSize(14);
+        doc.text(`Order #${index + 1} Details`, 20, currentY);
+        currentY += 15;
+
+        const orderInfo = [
+          ['Order ID:', order.orderId],
+          ['Date:', new Date(order.createdAt).toLocaleString()],
+          ['Status:', order.status.toUpperCase()],
+          ['Payment:', order.paymentStatus?.toUpperCase() || '']
+        ];
+
+        autoTable(doc, {
+          startY: currentY,
+          body: orderInfo,
+          theme: 'plain',
+          styles: { fontSize: 10 },
+          columnStyles: {
+            0: { fontStyle: 'bold', cellWidth: 40 },
+            1: { cellWidth: 100 }
+          },
+          didDrawPage: (data) => {
+            currentY = data.cursor.y + 10;
+          }
+        });
+
+        const itemsHead = [['Item', 'Qty', 'Price', 'Total']];
+        const itemsBody = order.items.map(item => [
+          item.name,
+          item.quantity,
+          `Rs ${Number(item.price).toFixed(2)}`,
+          `Rs ${(Number(item.price) * Number(item.quantity)).toFixed(2)}`
+        ]);
+
+        autoTable(doc, {
+          startY: currentY,
+          head: itemsHead,
+          body: itemsBody,
+          headStyles: { fillColor: [52, 152, 219] },
+          styles: { fontSize: 9 },
+          columnStyles: {
+            0: { cellWidth: 80 },
+            1: { cellWidth: 20 },
+            2: { cellWidth: 30 },
+            3: { cellWidth: 30 }
+          },
+          didDrawPage: (data) => {
+            currentY = data.cursor.y + 10;
+          }
+        });
+
+        doc.setFontSize(11);
+        doc.text(`Order Total: Rs ${calculateOrderTotal(order.items)}`, 20, currentY);
+      });
+
+      doc.save('Filtered_Orders_Report.pdf');
+      message.success('Filtered orders PDF downloaded successfully');
+    } catch (error) {
+      console.error('PDF Generation Error:', error);
+      message.error('Error details: ' + error.message);
+    }
+  };
+
   return (
     <div style={{ padding: '20px', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
       <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -479,6 +626,12 @@ export default function OrderPage() {
           ← Back to Home
         </Button>
         <Title level={4} style={{ margin: 0 }}>My Orders</Title>
+        <RangePicker
+          value={dateRange}
+          onChange={setDateRange}
+          style={{ marginLeft: 16 }}
+          allowClear
+        />
         {orders.length > 0 && (
           <Space>
             <Button
@@ -487,6 +640,14 @@ export default function OrderPage() {
               onClick={downloadAllOrdersPDF}
             >
               Download All Orders
+            </Button>
+            <Button
+              type="primary"
+              icon={<DownloadOutlined />}
+              onClick={downloadFilteredOrdersPDF}
+              disabled={!filteredOrders.length}
+            >
+              Download Filtered Orders
             </Button>
             <Popconfirm
               title="Delete All Orders"
@@ -513,7 +674,7 @@ export default function OrderPage() {
           <Spin size="large" />
           <p>Loading your orders...</p>
         </div>
-      ) : orders.length === 0 ? (
+      ) : filteredOrders.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '20px' }}>
           <Title level={4}>No Orders Found</Title>
           <p>You haven't placed any orders yet.</p>
@@ -523,7 +684,7 @@ export default function OrderPage() {
         </div>
       ) : (
         <Table
-          dataSource={orders}
+          dataSource={filteredOrders}
           columns={columns}
           expandable={{
             expandedRowRender,

@@ -9,15 +9,15 @@ const priorityLabels = {
 };
 
 const priorityColors = {
-  1: '#ff4d4f', // Red for High
-  2: '#fa8c16', // Orange for Medium
-  3: '#52c41a', // Green for Low
+  1: '#ff4d4f', 
+  2: '#fa8c16',
+  3: '#52c41a', 
 };
 
 const categoryColors = {
-  'Fruit': '#FFFBF0', // Light Yellow for Fruit
-  'Sweet': '#FFEBF0', // Light Pink for Sweet
-  'Other': '#F0F8FF', // Light Blue for other categories
+  'Fruit': '#FFFBF0', 
+  'Sweet': '#FFEBF0', 
+  'Other': '#F0F8FF', 
 };
 
 const WishlistPage = () => {

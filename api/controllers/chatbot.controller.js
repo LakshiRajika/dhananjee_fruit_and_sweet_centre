@@ -65,7 +65,7 @@ export const fallbackResponse = async (req, res) => {
   // Simple keyword-based responses for common questions
   const responses = {
     'order': 'You can change your order by contacting our customer service at DhananjeeFruit&SweetCenterSupport@.com or by calling us at +94 77 645 945.',
-    'deliver': 'Yes, we deliver on weekends! Our delivery hours are 9 AM to 6 PM on Saturdays and Sundays.',
+    'deliver': 'Yes, we deliver on both weekdays and weekends! On weekdays (Monday to Friday), we deliver 24 hours. On weekends (Saturday and Sunday), our delivery hours are 9 AM to 6 PM.',
     'refund': 'Our refund policy allows returns within 30 days of purchase. Items must be unused and in original packaging.',
     'shipping': 'Standard shipping takes 3-5 business days. Express shipping is available for next-day delivery.',
     'payment': 'We accept all major credit cards, Debit cards, and cash on Delivery.',

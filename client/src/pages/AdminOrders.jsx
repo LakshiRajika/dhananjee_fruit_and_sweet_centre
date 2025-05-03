@@ -17,23 +17,31 @@ export default function AdminOrders() {
   const [loading, setLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
   const [dateRange, setDateRange] = useState(null);
+  const [statusFilter, setStatusFilter] = useState(null);
 
   useEffect(() => {
     fetchAllOrders();
   }, []);
 
   useEffect(() => {
+    let filtered = [...orders];
+
+    // Apply date filter
     if (dateRange) {
       const [startDate, endDate] = dateRange;
-      const filtered = orders.filter(order => {
+      filtered = filtered.filter(order => {
         const orderDate = dayjs(order.createdAt);
         return orderDate.isAfter(startDate) && orderDate.isBefore(endDate);
       });
-      setFilteredOrders(filtered);
-    } else {
-      setFilteredOrders(orders);
     }
-  }, [dateRange, orders]);
+
+    // Apply status filter
+    if (statusFilter) {
+      filtered = filtered.filter(order => order.status === statusFilter);
+    }
+
+    setFilteredOrders(filtered);
+  }, [dateRange, statusFilter, orders]);
 
   const fetchAllOrders = async () => {
     try {
@@ -295,6 +303,146 @@ export default function AdminOrders() {
 
       doc.save('All_Orders_Report.pdf');
       message.success('All orders PDF downloaded successfully');
+    } catch (error) {
+      console.error('PDF Generation Error:', error);
+      message.error('Error details: ' + error.message);
+    }
+  };
+
+  const downloadFilteredOrdersPDF = () => {
+    if (!filteredOrders || filteredOrders.length === 0) {
+      message.error('No filtered orders to generate PDF');
+      return;
+    }
+
+    try {
+      const doc = new jsPDF();
+      let currentY = 20;
+
+      // Add title
+      doc.setFontSize(20);
+      doc.text('Filtered Orders Report', 20, currentY);
+      currentY += 15;
+
+      // Add date range and summary
+      const summaryInfo = [
+        ['Generated on:', new Date().toLocaleString()],
+        ['Date Range:', dateRange ? `${dateRange[0].format('YYYY-MM-DD')} to ${dateRange[1].format('YYYY-MM-DD')}` : 'All Dates'],
+        ['Total Orders:', filteredOrders.length.toString()],
+        ['Total Revenue:', `Rs ${filteredOrders.reduce((sum, order) => 
+          sum + parseFloat(calculateOrderTotal(order.items)), 0).toFixed(2)}`]
+      ];
+
+      autoTable(doc, {
+        startY: currentY,
+        body: summaryInfo,
+        theme: 'plain',
+        styles: { fontSize: 10 },
+        columnStyles: {
+          0: { fontStyle: 'bold', cellWidth: 40 },
+          1: { cellWidth: 100 }
+        },
+        didDrawPage: (data) => {
+          currentY = data.cursor.y + 10;
+        }
+      });
+
+      // Add orders summary table
+      const ordersTableHead = [['Order ID', 'Customer', 'Status', 'Payment', 'Amount', 'Date']];
+      const ordersTableBody = filteredOrders.map(order => [
+        order.orderId,
+        order.customerEmail,
+        order.status.toUpperCase(),
+        order.paymentStatus.toUpperCase(),
+        `Rs ${calculateOrderTotal(order.items)}`,
+        new Date(order.createdAt).toLocaleDateString()
+      ]);
+
+      autoTable(doc, {
+        startY: currentY,
+        head: ordersTableHead,
+        body: ordersTableBody,
+        headStyles: { fillColor: [41, 128, 185] },
+        styles: { fontSize: 9 },
+        columnStyles: {
+          0: { cellWidth: 45 },
+          1: { cellWidth: 45 },
+          2: { cellWidth: 25 },
+          3: { cellWidth: 25 },
+          4: { cellWidth: 25 },
+          5: { cellWidth: 25 }
+        },
+        didDrawPage: (data) => {
+          currentY = data.cursor.y + 10;
+        }
+      });
+
+      // Add detailed order information for filtered orders
+      filteredOrders.forEach((order, index) => {
+        doc.addPage();
+        currentY = 20;
+
+        // Order header
+        doc.setFontSize(14);
+        doc.text(`Order #${index + 1} Details`, 20, currentY);
+        currentY += 15;
+
+        // Order information
+        const orderInfo = [
+          ['Order ID:', order.orderId],
+          ['Customer:', order.customerEmail],
+          ['Date:', new Date(order.createdAt).toLocaleString()],
+          ['Status:', order.status.toUpperCase()],
+          ['Payment:', order.paymentStatus.toUpperCase()]
+        ];
+
+        autoTable(doc, {
+          startY: currentY,
+          body: orderInfo,
+          theme: 'plain',
+          styles: { fontSize: 10 },
+          columnStyles: {
+            0: { fontStyle: 'bold', cellWidth: 40 },
+            1: { cellWidth: 100 }
+          },
+          didDrawPage: (data) => {
+            currentY = data.cursor.y + 10;
+          }
+        });
+
+        // Items table
+        const itemsHead = [['Item', 'Qty', 'Price', 'Total']];
+        const itemsBody = order.items.map(item => [
+          item.name,
+          item.quantity,
+          `Rs ${Number(item.price).toFixed(2)}`,
+          `Rs ${(Number(item.price) * Number(item.quantity)).toFixed(2)}`
+        ]);
+
+        autoTable(doc, {
+          startY: currentY,
+          head: itemsHead,
+          body: itemsBody,
+          headStyles: { fillColor: [52, 152, 219] },
+          styles: { fontSize: 9 },
+          columnStyles: {
+            0: { cellWidth: 80 },
+            1: { cellWidth: 20 },
+            2: { cellWidth: 30 },
+            3: { cellWidth: 30 }
+          },
+          didDrawPage: (data) => {
+            currentY = data.cursor.y + 10;
+          }
+        });
+
+        // Order total
+        doc.setFontSize(11);
+        doc.text(`Order Total: Rs ${calculateOrderTotal(order.items)}`, 20, currentY);
+      });
+
+      doc.save('Filtered_Orders_Report.pdf');
+      message.success('Filtered orders PDF downloaded successfully');
     } catch (error) {
       console.error('PDF Generation Error:', error);
       message.error('Error details: ' + error.message);
@@ -571,6 +719,12 @@ export default function AdminOrders() {
     );
   };
 
+  const clearFilters = () => {
+    setDateRange(null);
+    setStatusFilter(null);
+    setFilteredOrders(orders);
+  };
+
   return (
     <div style={{ padding: '20px' }}>
       <Card 
@@ -595,16 +749,36 @@ export default function AdminOrders() {
               style={{ width: 300 }}
               placeholder={['Start Date', 'End Date']}
             />
+            <Select
+              placeholder="Filter by Status"
+              style={{ width: 150 }}
+              value={statusFilter}
+              onChange={(value) => setStatusFilter(value)}
+              allowClear
+            >
+              <Option value="pending">Pending</Option>
+              <Option value="processing">Processing</Option>
+              <Option value="shipped">Shipped</Option>
+              <Option value="delivered">Delivered</Option>
+              <Option value="cancelled">Cancelled</Option>
+              <Option value="refunded">Refunded</Option>
+            </Select>
             <Button 
               type="primary" 
               icon={<SearchOutlined />}
-              onClick={() => {
-                setDateRange(null);
-                setFilteredOrders(orders);
-              }}
+              onClick={clearFilters}
             >
-              Clear Filter
+              Clear Filters
             </Button>
+            {(dateRange || statusFilter) && (
+              <Button
+                type="primary"
+                icon={<FilePdfOutlined />}
+                onClick={downloadFilteredOrdersPDF}
+              >
+                Download Filtered Orders
+              </Button>
+            )}
           </Space>
         </div>
 

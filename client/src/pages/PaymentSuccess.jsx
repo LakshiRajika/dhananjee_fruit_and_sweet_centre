@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Card, Typography, List, Button, message, Space, Tag, Descriptions, Spin } from 'antd';
+import { Card, Typography, List, Button, message, Space, Tag, Descriptions, Spin, Table } from 'antd';
 import { CheckCircleOutlined, ShoppingOutlined, CompassOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
@@ -144,55 +144,92 @@ export default function PaymentSuccess() {
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
-      <Card>
-        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <CheckCircleOutlined style={{ fontSize: '64px', color: '#52c41a' }} />
-          <Title level={2}>Payment Successful!</Title>
-          <Text type="secondary">Thank you for your purchase</Text>
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '24px' }}>
+      <Card style={{ 
+        borderRadius: '8px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+      }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <CheckCircleOutlined style={{ fontSize: '64px', color: '#52c41a', marginBottom: '16px' }} />
+          <Title level={2} style={{ marginBottom: '8px' }}>Payment Successful!</Title>
+          <Text type="secondary" style={{ fontSize: '16px' }}>Thank you for your purchase</Text>
         </div>
 
-        <Descriptions title="Order Details" bordered column={2}>
-          <Descriptions.Item label="Order ID">{orderDetails.orderId}</Descriptions.Item>
-          <Descriptions.Item label="Date">{new Date().toLocaleString()}</Descriptions.Item>
-          <Descriptions.Item label="Status">
-            <Tag color={getStatusColor(orderDetails.status)}>
-              {orderDetails.status?.toUpperCase() || 'PROCESSING'}
-            </Tag>
-          </Descriptions.Item>
-          <Descriptions.Item label="Payment Method">
-            {orderDetails.paymentMethod === 'cash' ? 'Cash on Delivery' : 'Online Payment'}
-          </Descriptions.Item>
-          <Descriptions.Item label="Total Amount" span={2}>
-            Rs {orderDetails.totalAmount?.toFixed(2)}
-          </Descriptions.Item>
-        </Descriptions>
+        <Card title="Order Summary" style={{ marginBottom: '24px' }}>
+          <Descriptions bordered column={2}>
+            <Descriptions.Item label="Order ID" span={2}>
+              <Text strong>{orderDetails.orderId}</Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="Date">
+              <Text strong>{new Date().toLocaleString()}</Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="Status">
+              <Tag color={getStatusColor(orderDetails.status)} style={{ padding: '4px 8px', borderRadius: '4px' }}>
+                {orderDetails.status?.toUpperCase() || 'PROCESSING'}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Payment Method">
+              <Text strong>{orderDetails.paymentMethod === 'cash' ? 'Cash on Delivery' : 'Online Payment'}</Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="Total Amount" span={2}>
+              <Text strong type="success" style={{ fontSize: '18px' }}>
+                Rs {orderDetails.totalAmount?.toFixed(2)}
+              </Text>
+            </Descriptions.Item>
+          </Descriptions>
+        </Card>
 
-        <Card title="Order Items" style={{ marginTop: '20px' }}>
-          <List
+        <Card title="Order Items" style={{ marginBottom: '24px' }}>
+          <Table
             dataSource={orderDetails.items}
-            renderItem={item => (
-              <List.Item>
-                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                  <div>
-                    <Text strong>{item.name}</Text>
-                    <br />
-                    <Text type="secondary">Quantity: {item.quantity}</Text>
-                  </div>
-                  <div>
-                    <Text>Rs {(item.price * item.quantity).toFixed(2)}</Text>
-                  </div>
-                </div>
-              </List.Item>
-            )}
+            pagination={false}
+            rowKey="name"
+            columns={[
+              {
+                title: 'Item',
+                dataIndex: 'name',
+                key: 'name',
+                render: (text) => <Text strong>{text}</Text>
+              },
+              {
+                title: 'Quantity',
+                dataIndex: 'quantity',
+                key: 'quantity',
+                align: 'center'
+              },
+              {
+                title: 'Price',
+                dataIndex: 'price',
+                key: 'price',
+                render: (price) => <Text strong>Rs {price.toFixed(2)}</Text>,
+                align: 'right'
+              },
+              {
+                title: 'Subtotal',
+                key: 'subtotal',
+                render: (_, item) => (
+                  <Text strong type="success">
+                    Rs {(item.price * item.quantity).toFixed(2)}
+                  </Text>
+                ),
+                align: 'right'
+              }
+            ]}
           />
-          <div style={{ textAlign: 'right', marginTop: '20px', borderTop: '1px solid #f0f0f0', paddingTop: '20px' }}>
-            <Text strong>Total: Rs {orderDetails.totalAmount?.toFixed(2)}</Text>
+          <div style={{ 
+            textAlign: 'right', 
+            marginTop: '20px', 
+            borderTop: '1px solid #f0f0f0', 
+            paddingTop: '20px' 
+          }}>
+            <Text strong style={{ fontSize: '18px' }}>
+              Total: Rs {orderDetails.totalAmount?.toFixed(2)}
+            </Text>
           </div>
         </Card>
 
-        <div style={{ textAlign: 'center', marginTop: '30px' }}>
-          <Space size="middle">
+        <div style={{ textAlign: 'center', marginTop: '24px' }}>
+          <Space size="large">
             <Button 
               type="primary" 
               size="large" 
@@ -204,6 +241,7 @@ export default function PaymentSuccess() {
             <Button 
               type="default" 
               size="large"
+              icon={<ShoppingOutlined />}
               onClick={() => navigate('/orders')}
             >
               View All Orders
@@ -213,7 +251,6 @@ export default function PaymentSuccess() {
               size="large"
               icon={<CompassOutlined />}
               onClick={handleTrackOrder}
-              style={{ backgroundColor: '#1890ff' }}
             >
               Track Order
             </Button>

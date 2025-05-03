@@ -13,7 +13,6 @@ export default function RefundRequest({ orderId, amount }) {
   const [form] = Form.useForm();
 
   useEffect(() => {
-    // Check if a refund request already exists for this order
     const checkExistingRefund = async () => {
       try {
         setCheckingRefund(true);
@@ -25,7 +24,6 @@ export default function RefundRequest({ orderId, amount }) {
         }
       } catch (error) {
         console.error("Error checking existing refund:", error);
-        // If the error is 404, it means no refund exists, which is fine
         if (error.response && error.response.status === 404) {
           console.log("No refund exists for this order");
         } else {

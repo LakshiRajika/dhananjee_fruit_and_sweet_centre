@@ -13,6 +13,8 @@ import axios from 'axios';
 import { useSelector } from 'react-redux';
 import { generateOrderPDF } from '../utils/pdfService';
 import dayjs from 'dayjs';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -130,6 +132,11 @@ export default function Orders() {
     }
   };
 
+  const calculateOrderTotal = (items) => {
+    if (!items || !Array.isArray(items)) return 0;
+    return items.reduce((total, item) => total + (item.price * item.quantity), 0).toFixed(2);
+  };
+
   const columns = [
     {
       title: 'Order ID',
@@ -202,115 +209,281 @@ export default function Orders() {
     },
   ];
 
+  const downloadFilteredOrdersPDF = () => {
+    if (!filteredOrders || filteredOrders.length === 0) {
+      message.error('No filtered orders to generate PDF');
+      return;
+    }
+
+    try {
+      const doc = new jsPDF();
+      let currentY = 20;
+
+      // Add title
+      doc.setFontSize(20);
+      doc.text('Filtered Orders Report', 20, currentY);
+      currentY += 15;
+
+      // Add date range and summary
+      const summaryInfo = [
+        ['Generated on:', new Date().toLocaleString()],
+        ['Date Range:', dateRange ? `${dateRange[0].format('YYYY-MM-DD')} to ${dateRange[1].format('YYYY-MM-DD')}` : 'All Dates'],
+        ['Total Orders:', filteredOrders.length.toString()],
+        ['Total Revenue:', `Rs ${filteredOrders.reduce((sum, order) => 
+          sum + parseFloat(calculateOrderTotal(order.items)), 0).toFixed(2)}`]
+      ];
+
+      autoTable(doc, {
+        startY: currentY,
+        body: summaryInfo,
+        theme: 'plain',
+        styles: { fontSize: 10 },
+        columnStyles: {
+          0: { fontStyle: 'bold', cellWidth: 40 },
+          1: { cellWidth: 100 }
+        },
+        didDrawPage: (data) => {
+          currentY = data.cursor.y + 10;
+        }
+      });
+
+      // Add orders summary table
+      const ordersTableHead = [['Order ID', 'Status', 'Payment', 'Amount', 'Date']];
+      const ordersTableBody = filteredOrders.map(order => [
+        order.orderId,
+        order.status.toUpperCase(),
+        order.paymentStatus.toUpperCase(),
+        `Rs ${calculateOrderTotal(order.items)}`,
+        new Date(order.createdAt).toLocaleDateString()
+      ]);
+
+      autoTable(doc, {
+        startY: currentY,
+        head: ordersTableHead,
+        body: ordersTableBody,
+        headStyles: { fillColor: [41, 128, 185] },
+        styles: { fontSize: 9 },
+        columnStyles: {
+          0: { cellWidth: 50 },
+          1: { cellWidth: 35 },
+          2: { cellWidth: 35 },
+          3: { cellWidth: 35 },
+          4: { cellWidth: 35 }
+        },
+        didDrawPage: (data) => {
+          currentY = data.cursor.y + 10;
+        }
+      });
+
+      // Add detailed order information
+      filteredOrders.forEach((order, index) => {
+        doc.addPage();
+        currentY = 20;
+
+        doc.setFontSize(14);
+        doc.text(`Order #${index + 1} Details`, 20, currentY);
+        currentY += 15;
+
+        const orderInfo = [
+          ['Order ID:', order.orderId],
+          ['Date:', new Date(order.createdAt).toLocaleString()],
+          ['Status:', order.status.toUpperCase()],
+          ['Payment:', order.paymentStatus.toUpperCase()]
+        ];
+
+        autoTable(doc, {
+          startY: currentY,
+          body: orderInfo,
+          theme: 'plain',
+          styles: { fontSize: 10 },
+          columnStyles: {
+            0: { fontStyle: 'bold', cellWidth: 40 },
+            1: { cellWidth: 100 }
+          },
+          didDrawPage: (data) => {
+            currentY = data.cursor.y + 10;
+          }
+        });
+
+        const itemsHead = [['Item', 'Qty', 'Price', 'Total']];
+        const itemsBody = order.items.map(item => [
+          item.name,
+          item.quantity,
+          `Rs ${Number(item.price).toFixed(2)}`,
+          `Rs ${(Number(item.price) * Number(item.quantity)).toFixed(2)}`
+        ]);
+
+        autoTable(doc, {
+          startY: currentY,
+          head: itemsHead,
+          body: itemsBody,
+          headStyles: { fillColor: [52, 152, 219] },
+          styles: { fontSize: 9 },
+          columnStyles: {
+            0: { cellWidth: 80 },
+            1: { cellWidth: 20 },
+            2: { cellWidth: 30 },
+            3: { cellWidth: 30 }
+          },
+          didDrawPage: (data) => {
+            currentY = data.cursor.y + 10;
+          }
+        });
+
+        doc.setFontSize(11);
+        doc.text(`Order Total: Rs ${calculateOrderTotal(order.items)}`, 20, currentY);
+      });
+
+      doc.save('Filtered_Orders_Report.pdf');
+      message.success('Filtered orders PDF downloaded successfully');
+    } catch (error) {
+      console.error('PDF Generation Error:', error);
+      message.error('Error details: ' + error.message);
+    }
+  };
+
   return (
-    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <Button 
-          onClick={() => navigate('/')}
-          icon={<ArrowLeftOutlined />}
-        >
-          Back to Home
-        </Button>
-        <Title level={4} style={{ margin: 0 }}>My Orders</Title>
-        {orders.length > 0 && (
+    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+      <Card 
+        title={
           <Space>
-            <Button
-              type="primary"
-              icon={<DownloadOutlined />}
-              onClick={() => window.open(`http://localhost:3000/api/order/all-pdf/${currentUser._id}`, '_blank')}
-            >
-              Download All Orders
-            </Button>
-            <Popconfirm
-              title="Delete All Orders"
-              description="Are you sure you want to delete all your orders? This action cannot be undone."
-              onConfirm={handleDeleteAll}
-              okText="Yes"
-              cancelText="No"
-              okButtonProps={{ danger: true }}
-            >
-              <Button
-                type="primary"
-                danger
-                icon={<DeleteOutlined />}
-              >
-                Delete All Orders
-              </Button>
-            </Popconfirm>
+            <Button 
+              type="text" 
+              icon={<ArrowLeftOutlined />} 
+              onClick={() => navigate('/')}
+            />
+            <Title level={4} style={{ margin: 0 }}>My Orders</Title>
           </Space>
-        )}
-      </div>
-
-      <div style={{ marginBottom: '20px' }}>
-        <Space>
-          <RangePicker
-            value={dateRange}
-            onChange={(dates) => setDateRange(dates)}
-            style={{ width: 300 }}
-            placeholder={['Start Date', 'End Date']}
-          />
-          <Button 
-            type="primary" 
-            icon={<SearchOutlined />}
-            onClick={() => {
-              setDateRange(null);
-              setFilteredOrders(orders);
-            }}
-          >
-            Clear Filter
-          </Button>
-        </Space>
-      </div>
-
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '20px' }}>
-          <Card loading={true} />
-        </div>
-      ) : filteredOrders.length === 0 ? (
-        <Card>
-          <div style={{ textAlign: 'center', padding: '20px' }}>
-            <ShoppingOutlined style={{ fontSize: '48px', color: '#ccc' }} />
-            <Title level={4}>No orders found</Title>
-            <Button type="primary" onClick={() => navigate('/products')}>
+        }
+        extra={
+          <Space>
+            <RangePicker
+              value={dateRange}
+              onChange={(dates) => setDateRange(dates)}
+              style={{ width: 300 }}
+              placeholder={['Start Date', 'End Date']}
+            />
+            <Button 
+              type="primary" 
+              icon={<SearchOutlined />}
+              onClick={() => {
+                setDateRange(null);
+                setFilteredOrders(orders);
+              }}
+            >
+              Clear Filter
+            </Button>
+            {orders.length > 0 && (
+              <Space>
+                <Button
+                  type="primary"
+                  icon={<DownloadOutlined />}
+                  onClick={() => window.open(`http://localhost:3000/api/order/all-pdf/${currentUser._id}`, '_blank')}
+                >
+                  Download All
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<DownloadOutlined />}
+                  onClick={downloadFilteredOrdersPDF}
+                  disabled={!filteredOrders.length}
+                >
+                  Download Filtered
+                </Button>
+                <Popconfirm
+                  title="Delete All Orders"
+                  description="Are you sure you want to delete all your orders? This action cannot be undone."
+                  onConfirm={handleDeleteAll}
+                  okText="Yes"
+                  cancelText="No"
+                  okButtonProps={{ danger: true }}
+                >
+                  <Button
+                    type="primary"
+                    danger
+                    icon={<DeleteOutlined />}
+                  >
+                    Delete All
+                  </Button>
+                </Popconfirm>
+              </Space>
+            )}
+          </Space>
+        }
+        style={{ 
+          borderRadius: '8px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}
+      >
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <Card loading={true} />
+          </div>
+        ) : filteredOrders.length === 0 ? (
+          <Card style={{ textAlign: 'center', padding: '40px' }}>
+            <ShoppingOutlined style={{ fontSize: '64px', color: '#ccc', marginBottom: '16px' }} />
+            <Title level={4} style={{ marginBottom: '16px' }}>No orders found</Title>
+            <Button type="primary" size="large" onClick={() => navigate('/products')}>
               Start Shopping
             </Button>
-          </div>
-        </Card>
-      ) : (
-        <Table
-          columns={columns}
-          dataSource={filteredOrders}
-          rowKey="orderId"
-          pagination={{
-            pageSize: 10,
-            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} orders`,
-          }}
-          expandable={{
-            expandedRowRender: (record) => (
-              <Table
-                columns={[
-                  { title: 'Item', dataIndex: 'name', key: 'name' },
-                  { title: 'Quantity', dataIndex: 'quantity', key: 'quantity' },
-                  { 
-                    title: 'Price', 
-                    dataIndex: 'price', 
-                    key: 'price',
-                    render: (price) => `Rs ${price.toFixed(2)}`
-                  },
-                  {
-                    title: 'Subtotal',
-                    key: 'subtotal',
-                    render: (_, item) => `Rs ${(item.price * item.quantity).toFixed(2)}`
-                  }
-                ]}
-                dataSource={record.items}
-                pagination={false}
-                rowKey="name"
-              />
-            ),
-          }}
-        />
-      )}
+          </Card>
+        ) : (
+          <Table
+            columns={columns}
+            dataSource={filteredOrders}
+            rowKey="orderId"
+            pagination={{
+              pageSize: 10,
+              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} orders`,
+              showSizeChanger: true,
+              showQuickJumper: true
+            }}
+            expandable={{
+              expandedRowRender: (record) => (
+                <Card style={{ margin: '16px 0' }}>
+                  <Table
+                    columns={[
+                      { 
+                        title: 'Item', 
+                        dataIndex: 'name', 
+                        key: 'name',
+                        render: (text) => <Text strong>{text}</Text>
+                      },
+                      { 
+                        title: 'Quantity', 
+                        dataIndex: 'quantity', 
+                        key: 'quantity',
+                        align: 'center'
+                      },
+                      { 
+                        title: 'Price', 
+                        dataIndex: 'price', 
+                        key: 'price',
+                        render: (price) => <Text strong>Rs {price.toFixed(2)}</Text>,
+                        align: 'right'
+                      },
+                      {
+                        title: 'Subtotal',
+                        key: 'subtotal',
+                        render: (_, item) => <Text strong type="success">Rs {(item.price * item.quantity).toFixed(2)}</Text>,
+                        align: 'right'
+                      }
+                    ]}
+                    dataSource={record.items}
+                    pagination={false}
+                    rowKey="name"
+                    style={{ margin: '0 -16px' }}
+                  />
+                </Card>
+              ),
+            }}
+            style={{ 
+              borderRadius: '8px',
+              overflow: 'hidden'
+            }}
+          />
+        )}
+      </Card>
     </div>
   );
 }

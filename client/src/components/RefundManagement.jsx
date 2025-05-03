@@ -5,22 +5,31 @@ import {
   CloseCircleOutlined, 
   ExclamationCircleOutlined,
   EyeOutlined,
-  DeleteOutlined
+  DeleteOutlined,
+  DownloadOutlined,
+  FilterOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
+import * as XLSX from 'xlsx';
 
 const { Option } = Select;
 
 export default function RefundManagement() {
   const [refunds, setRefunds] = useState([]);
+  const [filteredRefunds, setFilteredRefunds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedRefund, setSelectedRefund] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
   const [form] = Form.useForm();
 
   useEffect(() => {
     fetchRefunds();
   }, []);
+
+  useEffect(() => {
+    filterRefunds();
+  }, [statusFilter, refunds]);
 
   const fetchRefunds = async () => {
     try {
@@ -41,12 +50,20 @@ export default function RefundManagement() {
     }
   };
 
+  const filterRefunds = () => {
+    if (statusFilter === 'all') {
+      setFilteredRefunds(refunds);
+    } else {
+      setFilteredRefunds(refunds.filter(refund => refund.status.toLowerCase() === statusFilter.toLowerCase()));
+    }
+  };
+
   const handleStatusUpdate = async (refundId, status) => {
     try {
       console.log(`Updating refund ${refundId} status to ${status}`);
       const response = await axios.put(`http://localhost:3000/api/refund/${refundId}/status`, {
         status,
-        processedBy: 'admin' // You can replace this with actual admin ID
+        processedBy: 'admin' 
       });
 
       if (response.data.success) {
@@ -80,6 +97,36 @@ export default function RefundManagement() {
   const showRefundDetails = (refund) => {
     setSelectedRefund(refund);
     setIsModalVisible(true);
+  };
+
+  const handleDownload = () => {
+    try {
+      const data = filteredRefunds.map(refund => ({
+        'Refund ID': refund.refundId,
+        'Order ID': refund.orderId,
+        'User ID': refund.userId,
+        'Amount': `Rs ${refund.amount}`,
+        'Status': refund.status.toUpperCase(),
+        'Created At': new Date(refund.createdAt).toLocaleDateString(),
+        'Processed At': refund.processedAt ? new Date(refund.processedAt).toLocaleDateString() : 'N/A',
+        'Processed By': refund.processedBy || 'N/A',
+        'Reason': refund.reason
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Refunds');
+      
+      // Generate filename with current date
+      const date = new Date().toISOString().split('T')[0];
+      const fileName = `refunds_${date}.xlsx`;
+      
+      XLSX.writeFile(wb, fileName);
+      message.success('Refunds data downloaded successfully');
+    } catch (error) {
+      console.error('Error downloading refunds:', error);
+      message.error('Failed to download refunds data');
+    }
   };
 
   const getStatusColor = (status) => {
@@ -187,10 +234,35 @@ export default function RefundManagement() {
 
   return (
     <div className="p-4">
-      <Card title="Refund Management">
+      <Card 
+        title="Refund Management"
+        extra={
+          <Space>
+            <Select
+              defaultValue="all"
+              style={{ width: 120 }}
+              onChange={value => setStatusFilter(value)}
+              placeholder="Filter by status"
+            >
+              <Option value="all">All Status</Option>
+              <Option value="pending">Pending</Option>
+              <Option value="approved">Approved</Option>
+              <Option value="rejected">Rejected</Option>
+              <Option value="processed">Processed</Option>
+            </Select>
+            <Button 
+              type="primary"
+              icon={<DownloadOutlined />}
+              onClick={handleDownload}
+            >
+              Download
+            </Button>
+          </Space>
+        }
+      >
         <Table
           columns={columns}
-          dataSource={refunds}
+          dataSource={filteredRefunds}
           loading={loading}
           rowKey="refundId"
           pagination={{ pageSize: 10 }}
