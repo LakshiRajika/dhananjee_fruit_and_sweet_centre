@@ -12,7 +12,7 @@ import Footer from "./components/Footer";
 import PrivateRoute from "./components/PrivateRoute";
 import CartPage from "./pages/CartPage";
 import PaymentSuccess from "./pages/PaymentSuccess";
-import OrderPage from "./pages/OrderPage"; // Import OrderPage component
+import OrderPage from "./pages/OrderPage"; 
 import Feedback from "./pages/Feedback"; // Corrected import for Feedback
 import FeedbackForm from "./pages/feedbackForm";
 import TrackOrderPage from "./pages/TrackOrderPage";
