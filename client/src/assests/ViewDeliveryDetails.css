@@ -1,0 +1,131 @@
+/* Container for the main delivery details */
+.view-delivery-container {
+    width: 80%;
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .delivery-header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .delivery-header h2 {
+    font-size: 2rem;
+    color: #333;
+  }
+  
+  .delivery-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 20px;
+  }
+  
+  .delivery-item {
+    font-size: 1rem;
+    color: #444;
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .delivery-item strong {
+    color: #333;
+  }
+  
+  .delivery-item p {
+    margin: 0;
+    font-size: 1rem;
+  }
+  
+  .action-buttons {
+    text-align: center;
+    margin-top: 30px;
+  }
+  
+  .edit-button,
+  .delete-button {
+    background-color: #4caf50;
+    color: #fff;
+    border: none;
+    padding: 12px 20px;
+    font-size: 1rem;
+    margin: 0 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .edit-button:hover,
+  .delete-button:hover {
+    background-color: #45a049;
+  }
+  
+  .delete-button {
+    background-color: #f44336;
+  }
+  
+  .delete-button:hover {
+    background-color: #d32f2f;
+  }
+  
+  .loading {
+    text-align: center;
+    font-size: 1.5rem;
+    color: #888;
+  }
+  
+  .error {
+    text-align: center;
+    font-size: 1.5rem;
+    color: red;
+  }
+  
+  /* Responsive styling for smaller screens */
+  @media (max-width: 768px) {
+    .delivery-summary {
+      grid-template-columns: 1fr;
+    }
+  }
+  .action-buttons {
+    text-align: center;
+    margin-top: 20px;
+  }
+  
+  .save-button,
+  .cancel-button {
+    padding: 12px 20px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+  }
+  
+  .save-button {
+    background-color: #007bff; /* Blue */
+    color: white;
+  }
+  
+  .save-button:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+  }
+  
+  .cancel-button {
+    background-color: #dc3545; /* Red */
+    color: white;
+    margin-left: 10px;
+  }
+  
+  .cancel-button:hover {
+    background-color: #b02a37;
+    transform: scale(1.05);
+  }
+  

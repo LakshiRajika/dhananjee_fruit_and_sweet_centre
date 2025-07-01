@@ -1,0 +1,107 @@
+.container {
+  max-width: 900px;
+  margin: auto;
+  padding: 20px;
+}
+
+.search-bar {
+  margin-bottom: 15px;
+}
+
+.search-bar input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.button {
+  margin-bottom: 15px;
+}
+
+.button button {
+  padding: 10px 15px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.product-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.product-table th, .product-table td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: left;
+}
+
+.product-table th {
+  background-color: #f4f4f4;
+}
+
+.product-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.product-table .actions {
+  display: flex;
+  justify-content: center;
+  gap: 5px; /* Space between buttons */
+}
+
+.details-btn, .edit-btn, .delete-btn {
+  padding: 5px 10px;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.details-btn {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.edit-btn {
+  background-color: #007bff;
+  color: white;
+}
+
+.delete-btn {
+  background-color: #dc3545;
+  color: white;
+}
+
+.no-data {
+  text-align: center;
+  font-weight: bold;
+  color: red;
+}
+
+.message {
+  padding: 10px;
+  text-align: center;
+  border-radius: 5px;
+  margin-bottom: 15px;
+}
+
+.success {
+  background-color: #28a745;
+  color: white;
+}
+
+.error {
+  background-color: #dc3545;
+  color: white;
+}
+
+.product-image {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 5px;
+}

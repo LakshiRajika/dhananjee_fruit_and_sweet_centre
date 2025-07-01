@@ -1,0 +1,98 @@
+.feedback-container {
+  max-width: 800px; /* Increased width for a larger form */
+  margin: 40px auto; /* Added margin for spacing */
+  padding: 40px; /* Increased padding for a spacious layout */
+  background-color: #ffffff; /* Clean white background */
+  border-radius: 15px; /* Slightly rounded corners */
+  box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.1); /* Softer shadow */
+  font-family: "Arial", sans-serif;
+}
+
+h2 {
+  text-align: center;
+  color: #2c3e50; /* Dark blue for a professional look */
+  font-weight: 700;
+  font-size: 24px; /* Increased font size */
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  font-weight: 600;
+  margin-top: 14px;
+  color: #34495e; /* Darkened text for readability */
+  font-size: 16px;
+}
+
+input,
+select,
+textarea {
+  padding: 14px;
+  border: 2px solid #3498db; /* Thicker blue border */
+  border-radius: 10px;
+  margin-top: 8px;
+  font-size: 17px;
+}
+
+textarea {
+  resize: none;
+  height: 150px; /* Increased height for better typing experience */
+}
+
+button {
+  background-color: #70777e6c; /* Bootstrap Blue */
+  color: white;
+  border: none;
+  padding: 14px;
+  margin-top: 24px;
+  cursor: pointer;
+  font-size: 17px;
+  border-radius: 10px;
+  font-weight: bold;
+  transition: 0.3s ease-in-out;
+}
+
+button:hover {
+  background-color: #494d52; /* Darker blue on hover */
+  transform: scale(1.05); /* Slight hover effect */
+}
+
+.star-rating {
+  display: flex;
+  gap: 10px;
+  font-size: 30px;
+  cursor: pointer;
+}
+
+.star {
+  color: #d3d3d3; /* Default gray stars */
+  transition: color 0.3s;
+}
+
+.star.selected {
+  color: #f1c40f; /* Yellow stars */
+}
+
+.reviews {
+  margin-top: 50px;
+}
+
+.review-item {
+  background-color: #f8f9fa; /* Light gray for contrast */
+  padding: 18px;
+  margin: 12px 0;
+  border-radius: 10px;
+  border-left: 5px solid #007bff; /* Blue accent border */
+  font-size: 16px;
+}
+
+.review-item img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+  margin-top: 12px;
+  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.1);
+}

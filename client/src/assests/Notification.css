@@ -1,0 +1,41 @@
+/* src/components/Notification.css */
+
+.toast-success {
+    background-color: #28a745; /* Green for success */
+    color: white;
+    font-weight: bold;
+  }
+  
+  .toast-error {
+    background-color: #dc3545; /* Red for error */
+    color: white;
+    font-weight: bold;
+  }
+  
+  .toast-info {
+    background-color: #17a2b8; /* Blue for info */
+    color: white;
+    font-weight: bold;
+  }
+  
+  .toast-default {
+    background-color: #ffc107; /* Yellow for default */
+    color: black;
+    font-weight: bold;
+  }
+  
+  .btn-show-toast {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 16px;
+    margin: 10px;
+  }
+  
+  .btn-show-toast:hover {
+    background-color: #0056b3;
+  }
+  
